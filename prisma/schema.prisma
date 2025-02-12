@@ -12,3 +12,54 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id        BigInt     @id @default(autoincrement())
+  email     String     @unique
+  password  String
+  name      String
+  books     Book[]     @relation("UserBooks")
+  favorites Favorite[]
+  createdAt DateTime   @default(now())
+
+  ordersAsBuyer  Order[] @relation("BuyerOrders") // 구매자로 참여한 주문
+  ordersAsSeller Order[] @relation("SellerOrders") // 판매자로 참여한 주문
+}
+
+model Book {
+  id        BigInt     @id @default(autoincrement())
+  title     String
+  author    String
+  publisher String
+  price     Decimal
+  status    String     @default("새책")
+  owner     User       @relation("UserBooks", fields: [ownerId], references: [id])
+  ownerId   BigInt
+  createdAt DateTime   @default(now())
+  orders    Order[]
+  favorites Favorite[]
+}
+
+model Order {
+  id     BigInt @id @default(autoincrement())
+  book   Book   @relation(fields: [bookId], references: [id])
+  bookId BigInt
+
+  buyer   User   @relation("BuyerOrders", fields: [buyerId], references: [id])
+  buyerId BigInt
+
+  seller   User   @relation("SellerOrders", fields: [sellerId], references: [id])
+  sellerId BigInt
+
+  status    String   @default("요청")
+  createdAt DateTime @default(now())
+}
+
+model Favorite {
+  id        BigInt   @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    BigInt
+  book      Book     @relation(fields: [bookId], references: [id])
+  bookId    BigInt
+  createdAt DateTime @default(now())
+}
