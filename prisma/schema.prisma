@@ -34,7 +34,7 @@ enum BookStatus {
 }
 
 model Book {
-  id        BigInt     @id @default(autoincrement())
+  id        BigInt     @id @unique @default(autoincrement())
   title     String
   author    String
   publisher String
