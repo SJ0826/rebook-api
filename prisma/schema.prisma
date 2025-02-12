@@ -15,9 +15,9 @@ datasource db {
 
 model User {
   id        BigInt     @id @default(autoincrement())
-  email     String     @unique
-  password  String
-  name      String
+  email     String     @unique @db.VarChar(255)
+  password  String     @db.VarChar(100)
+  name      String     @db.VarChar(50)
   books     Book[]     @relation("UserBooks")
   favorites Favorite[]
   createdAt DateTime   @default(now())
@@ -26,18 +26,31 @@ model User {
   ordersAsSeller Order[] @relation("SellerOrders") // 판매자로 참여한 주문
 }
 
+enum BookStatus {
+  NEW // 새책
+  LIKE_NEW // 거의 새책
+  GOOD // 양호
+  ACCEPTABLE // 사용감 있음
+}
+
 model Book {
   id        BigInt     @id @default(autoincrement())
   title     String
   author    String
   publisher String
   price     Decimal
-  status    String     @default("새책")
+  status    BookStatus @default(NEW)
   owner     User       @relation("UserBooks", fields: [ownerId], references: [id])
   ownerId   BigInt
   createdAt DateTime   @default(now())
   orders    Order[]
   favorites Favorite[]
+}
+
+enum OrderStatus {
+  PENDING // 진행 중
+  COMPLETED // 완료
+  CANCELED // 취소
 }
 
 model Order {
@@ -51,8 +64,8 @@ model Order {
   seller   User   @relation("SellerOrders", fields: [sellerId], references: [id])
   sellerId BigInt
 
-  status    String   @default("요청")
-  createdAt DateTime @default(now())
+  status    OrderStatus @default(PENDING)
+  createdAt DateTime    @default(now())
 }
 
 model Favorite {

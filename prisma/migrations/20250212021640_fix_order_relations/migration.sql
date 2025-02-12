@@ -9,7 +9,7 @@ CREATE TABLE "User" (
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
+
 CREATE TABLE "Book" (
     "id" BIGSERIAL NOT NULL,
     "title" TEXT NOT NULL,
