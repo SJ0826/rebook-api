@@ -1,10 +1,13 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
-import * as process from 'node:process';
 
 @Injectable()
 export class AuthService {
@@ -59,11 +62,58 @@ export class AuthService {
     }
 
     // JWT 토큰 발급
-    const payload = { userId: user.id, email: user.email };
-    const accessToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_SECRET,
-      expiresIn: '1h',
+    // const payload = { userId: user.id, email: user.email };
+    // const accessToken = this.jwtService.sign(payload, {
+    //   secret: process.env.JWT_SECRET,
+    //   expiresIn: '1h',
+    // });
+
+    // Access Token & Refresh Token 생성
+    const accessToken = this.jwtService.sign(
+      { userId: user.id },
+      { expiresIn: '15m' },
+    );
+    const refreshToken = this.jwtService.sign(
+      { userId: user.id },
+      { expiresIn: '7d' },
+    );
+
+    // Refresh Token을 해싱 후 저장
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken: hashedRefreshToken },
     });
+
+    return { accessToken, refreshToken };
+  }
+
+  // Access Token 갱신
+  async refreshToken(refreshToken: string) {
+    // RefreshToken에서 userId 추출
+    const payload = this.jwtService.verify(refreshToken, {
+      secret: process.env.JWT_SECRET || 'JWT_SECRET',
+    });
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.userId },
+    });
+
+    if (!user || !user.refreshToken) {
+      throw new UnauthorizedException('인증 정보가 없습니다');
+    }
+
+    // Refresh Token 검증
+    const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
+    if (!isMatch) {
+      throw new UnauthorizedException('유효하지 않은 Refresh Token입니다.');
+    }
+
+    // 새 accessToken 발급
+    const accessToken = this.jwtService.sign(
+      { userId: user.id },
+      { expiresIn: '15m' },
+    );
 
     return { accessToken };
   }

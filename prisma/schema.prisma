@@ -14,13 +14,14 @@ datasource db {
 }
 
 model User {
-  id        BigInt     @id @default(autoincrement())
-  email     String     @unique @db.VarChar(255)
-  password  String     @db.VarChar(100)
-  name      String     @db.VarChar(50)
-  books     Book[]     @relation("UserBooks")
-  favorites Favorite[]
-  createdAt DateTime   @default(now())
+  id           BigInt     @id @default(autoincrement())
+  email        String     @unique @db.VarChar(255)
+  password     String     @db.VarChar(100)
+  name         String     @db.VarChar(50)
+  refreshToken String?
+  books        Book[]     @relation("UserBooks")
+  favorites    Favorite[]
+  createdAt    DateTime   @default(now())
 
   ordersAsBuyer  Order[] @relation("BuyerOrders") // 구매자로 참여한 주문
   ordersAsSeller Order[] @relation("SellerOrders") // 판매자로 참여한 주문
