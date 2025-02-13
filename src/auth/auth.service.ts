@@ -3,10 +3,15 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { JwtService } from '@nestjs/jwt';
+import * as process from 'node:process';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
 
   /**
    * 회원가입
@@ -55,6 +60,11 @@ export class AuthService {
 
     // JWT 토큰 발급
     const payload = { userId: user.id, email: user.email };
-    // TODO: JWT 토큰 발급 로직 추가
+    const accessToken = this.jwtService.sign(payload, {
+      secret: process.env.JWT_SECRET,
+      expiresIn: '1h',
+    });
+
+    return { accessToken };
   }
 }
