@@ -1,5 +1,0 @@
-name: 🐛 Bug Report
-description: 애플리케이션에서 발생한 버그를 신고합니다.
-title: "[🐞Bug]: "
-labels: [ "bug", "needs-triage" ]
-assignees: [ ]
