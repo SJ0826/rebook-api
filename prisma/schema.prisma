@@ -35,17 +35,18 @@ enum BookStatus {
 }
 
 model Book {
-  id        BigInt     @id @unique @default(autoincrement())
-  title     String
-  author    String
-  publisher String
-  price     Decimal
-  status    BookStatus @default(NEW)
-  owner     User       @relation("UserBooks", fields: [ownerId], references: [id])
-  ownerId   BigInt
-  createdAt DateTime   @default(now())
-  orders    Order[]
-  favorites Favorite[]
+  id          BigInt     @id @unique @default(autoincrement())
+  title       String
+  author      String
+  publisher   String
+  price       Decimal
+  description String?
+  status      BookStatus @default(NEW)
+  owner       User       @relation("UserBooks", fields: [ownerId], references: [id])
+  ownerId     BigInt
+  createdAt   DateTime   @default(now())
+  orders      Order[]
+  favorites   Favorite[]
 }
 
 enum OrderStatus {
