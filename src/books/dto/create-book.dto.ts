@@ -16,4 +16,7 @@ export class CreateBookDto {
   @IsOptional()
   @IsString()
   description: string;
+
+  @IsNumber()
+  sellerId: number;
 }
