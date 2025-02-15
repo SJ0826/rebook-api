@@ -6,6 +6,10 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { User } from '@prisma/client';
 
+/**
+ * 1. 요청을 가로채서 토큰을 검증한다
+ * 2. req.user에 사용자 정보를 자동으로 추가한다
+ */
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   canActivate(context: ExecutionContext) {
