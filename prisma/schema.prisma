@@ -55,16 +55,13 @@ enum OrderStatus {
 }
 
 model Order {
-  id     BigInt @id @default(autoincrement())
-  book   Book   @relation(fields: [bookId], references: [id])
-  bookId BigInt
-
-  buyer   User   @relation("BuyerOrders", fields: [buyerId], references: [id])
-  buyerId BigInt
-
-  seller   User   @relation("SellerOrders", fields: [sellerId], references: [id])
-  sellerId BigInt
-
+  id        BigInt      @id @default(autoincrement())
+  book      Book        @relation(fields: [bookId], references: [id])
+  bookId    BigInt
+  buyer     User        @relation("BuyerOrders", fields: [buyerId], references: [id])
+  buyerId   BigInt
+  seller    User        @relation("SellerOrders", fields: [sellerId], references: [id])
+  sellerId  BigInt
   status    OrderStatus @default(PENDING)
   createdAt DateTime    @default(now())
 }
