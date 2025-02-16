@@ -14,16 +14,18 @@ datasource db {
 }
 
 model User {
-  id           BigInt     @id @default(autoincrement()) @db.BigInt
-  email        String     @unique @db.VarChar(255)
-  password     String     @db.VarChar(100)
-  name         String     @db.VarChar(50)
-  refreshToken String?    @map("refresh_token")
-  books        Book[]     @relation("UserBooks")
+  id           BigInt         @id @default(autoincrement()) @db.BigInt
+  email        String         @unique @db.VarChar(255)
+  password     String         @db.VarChar(100)
+  name         String         @db.VarChar(50)
+  refreshToken String?        @map("refresh_token")
+  books        Book[]         @relation("UserBooks")
   favorites    Favorite[]
-  createdAt    DateTime   @default(now()) @map("created_at")
-  buyerOrders  Order[]    @relation("BuyerOrders") // 구매자로 참여한 주문
-  sellerOrders Order[]    @relation("SellerOrders") // 판매자로 참여한 주문
+  createdAt    DateTime       @default(now()) @map("created_at")
+  buyerOrders  Order[]        @relation("BuyerOrders") // 구매자로 참여한 주문
+  sellerOrders Order[]        @relation("SellerOrders") // 판매자로 참여한 주문
+  Message      Message[]
+  UserChatRoom UserChatRoom[]
 }
 
 enum BookStatus {
@@ -64,6 +66,37 @@ model Order {
   sellerId  BigInt
   status    OrderStatus @default(PENDING)
   createdAt DateTime    @default(now())
+  chatRoom  ChatRoom?
+}
+
+model ChatRoom {
+  id           BigInt         @id @default(autoincrement())
+  order        Order          @relation(fields: [orderId], references: [id])
+  orderId      BigInt         @unique @map("order_id")
+  messages     Message[]
+  createdAt    DateTime       @default(now()) @map("created_at")
+  UserChatRoom UserChatRoom[]
+}
+
+model Message {
+  id         BigInt   @id @default(autoincrement())
+  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id])
+  chatRoomId BigInt   @map("chat_room_id")
+  sender     User     @relation(fields: [senderId], references: [id])
+  senderId   BigInt   @map("sender_id")
+  content    String
+  createdAt  DateTime @default(now()) @map("created_at")
+}
+
+model UserChatRoom {
+  id         BigInt   @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     BigInt   @map("user_id")
+  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id])
+  chatRoomId BigInt   @map("chat_room_id")
+  lastReadAt DateTime @default(now()) @map("last_read_at")
+
+  @@unique([userId, chatRoomId])
 }
 
 model Favorite {

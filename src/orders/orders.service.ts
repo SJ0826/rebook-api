@@ -17,19 +17,31 @@ export class OrdersService {
   async createOrder(buyerId: number, createOrderDto: CreateOrderDto) {
     const { bookId } = createOrderDto;
 
+    // 1. 거래 요청에 해당하는 책 확인
     const book = await this.prisma.book.findUnique({ where: { id: bookId } });
     if (!book) throw new NotFoundException('해당 책을 찾을 수 없습니다.');
 
+    // 2. 구매자와 판매자가 동일하면 거래를 생성할 수 없음.
     if (BigInt(book.sellerId) === BigInt(buyerId))
       throw new ForbiddenException('본인의 책을 구매할 수 없습니다.');
 
-    return this.prisma.order.create({
+    // 3. 거래 생성
+    const order = this.prisma.order.create({
       data: {
         bookId,
         buyerId,
         sellerId: book.sellerId,
       },
     });
+
+    // 4. 채팅방 생성
+    await this.prisma.chatRoom.create({
+      data: {
+        orderId: (await order).id,
+      },
+    });
+
+    return order;
   }
 
   /**

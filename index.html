@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Socket.IO 테스트</title>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+<h1>📡 Socket.IO 테스트</h1>
+<p>상태: <span id="status">연결되지 않음 ❌</span></p>
+
+<button onclick="connectSocket()">🔗 서버 연결</button>
+<button onclick="disconnectSocket()">🔌 연결 종료</button>
+
+<h2>채팅방 입장</h2>
+<input id="chatRoomId" placeholder="채팅방 ID 입력" type="number">
+<button onclick="joinRoom()">입장</button>
+
+<h2>메시지 전송</h2>
+<input id="messageInput" placeholder="메시지를 입력하세요" type="text">
+<button onclick="sendMessage()">보내기</button>
+
+<h2>📩 메시지 로그</h2>
+<div id="chatLog" style="border:1px solid #ccc; padding:10px; height:200px; overflow:auto;"></div>
+
+<script>
+  let socket;
+
+  function connectSocket() {
+    socket = io('ws://localhost:3000/chat', { transports: ['websocket'] });
+
+    socket.on('connect', () => {
+      document.getElementById('status').innerText = `연결됨 ✅ (ID: ${socket.id})`;
+      console.log('✅ 서버와 연결됨!', socket.id);
+    });
+
+    socket.on('disconnect', () => {
+      document.getElementById('status').innerText = '연결 끊김 ❌';
+      console.log('❌ 서버 연결 종료');
+    });
+
+    // ✅ 기존 메시지 불러오기
+    socket.on('loadMessages', (messages) => {
+      console.log('📩 기존 메시지:', messages);
+      const chatLog = document.getElementById('chatLog');
+      chatLog.innerHTML = ''; // 기존 메시지 초기화
+
+      messages.forEach(msg => {
+        chatLog.innerHTML += `<p>📜 ${msg.content} (보낸 사람: ${msg.senderId})</p>`;
+      });
+    });
+
+    // ✅ 실시간 메시지 수신
+    socket.on('newMessage', (message) => {
+      console.log('📩 새 메시지:', message);
+      document.getElementById('chatLog').innerHTML += `<p>📩 ${message.content} (보낸 사람: ${message.senderId})</p>`;
+    });
+  }
+
+  function disconnectSocket() {
+    if (socket) {
+      socket.disconnect();
+      console.log('🔌 서버 연결 종료됨');
+    }
+  }
+
+  function joinRoom() {
+    const chatRoomId = document.getElementById('chatRoomId').value;
+    if (!chatRoomId) {
+      alert('채팅방 ID를 입력하세요!');
+      return;
+    }
+
+    socket.emit('joinRoom', { chatRoomId: Number(chatRoomId) });
+    console.log(`🚪 채팅방 ${chatRoomId}에 입장 요청`);
+  }
+
+  function sendMessage() {
+    const chatRoomId = document.getElementById('chatRoomId').value;
+    const message = document.getElementById('messageInput').value;
+    if (!chatRoomId || !message) {
+      alert('채팅방 ID와 메시지를 입력하세요!');
+      return;
+    }
+
+    socket.emit('message', {
+      chatRoomId: Number(chatRoomId),
+      senderId: 1, // 테스트용 ID
+      content: message,
+    });
+
+    console.log('✉️ 메시지 전송:', message);
+    document.getElementById('chatLog').innerHTML += `<p>✉️ 나: ${message}</p>`;
+  }
+</script>
+</body>
+</html>
