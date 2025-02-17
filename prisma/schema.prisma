@@ -18,7 +18,7 @@ model User {
   email        String         @unique @db.VarChar(255)
   password     String         @db.VarChar(100)
   name         String         @db.VarChar(50)
-  refreshToken String?        @map("refresh_token")
+  refreshToken String?        @map("refresh_token") @db.VarChar(255)
   books        Book[]         @relation("UserBooks")
   favorites    Favorite[]
   createdAt    DateTime       @default(now()) @map("created_at")
@@ -37,11 +37,11 @@ enum BookStatus {
 
 model Book {
   id          BigInt     @id @unique @default(autoincrement())
-  title       String
-  author      String
-  publisher   String
-  price       Decimal
-  description String?
+  title       String     @db.VarChar(255)
+  author      String     @db.VarChar(100)
+  publisher   String     @db.VarChar(150)
+  price       BigInt
+  description String?    @db.Text
   status      BookStatus @default(NEW)
   seller      User       @relation("UserBooks", fields: [sellerId], references: [id])
   sellerId    BigInt     @map("seller_id")
