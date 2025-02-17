@@ -48,6 +48,9 @@ model Book {
   createdAt   DateTime   @default(now()) @map("created_at")
   orders      Order[]
   favorites   Favorite[]
+
+  @@index(fields: [title(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@index(fields: [author(ops: raw("gin_trgm_ops"))], type: Gin)
 }
 
 enum OrderStatus {
