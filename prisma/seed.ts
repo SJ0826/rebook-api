@@ -4,51 +4,81 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🚀 Seeding users...');
+  console.log('🌱 Seeding users...');
 
-  // ✅ 10명의 사용자 생성
-  const users = await Promise.all(
-    Array.from({ length: 10 }).map(async (_, i) => {
-      return prisma.user.create({
-        data: {
-          email: `user${i + 1}@example.com`,
-          password: await bcrypt.hash('password123', 10),
-          name: `User${i + 1}`,
-        },
-      });
-    }),
-  );
+  const users = [
+    { name: '김철수', email: 'chulsoo@example.com', password: 'password123' },
+    { name: '이영희', email: 'younghee@example.com', password: 'password123' },
+    { name: '박민준', email: 'minjun@example.com', password: 'password123' },
+    { name: '최수연', email: 'sooyeon@example.com', password: 'password123' },
+    { name: '한지원', email: 'jiwon@example.com', password: 'password123' },
+  ];
 
-  console.log('✅ Users seeded!');
+  for (const user of users) {
+    const hashedPassword = await bcrypt.hash(user.password, 10);
+    await prisma.user.create({
+      data: { ...user, password: hashedPassword },
+    });
+  }
 
-  console.log('🚀 Seeding books...');
+  console.log('✅ User seeding completed.');
 
-  // ✅ 50권의 책 생성
-  const books = await Promise.all(
-    Array.from({ length: 50 }).map((_, i) => {
-      return prisma.book.create({
-        data: {
-          title: `테스트 도서 ${i + 1}`,
-          author: `저자 ${i + 1}`,
-          publisher: `출판사 ${i + 1}`,
-          price: (Math.random() * 50).toFixed(2), // 0~50달러 랜덤 가격
-          status: ['NEW', 'LIKE_NEW', 'GOOD', 'ACCEPTABLE'][Math.floor(Math.random() * 4)] as BookStatus,
-          sellerId: users[Math.floor(Math.random() * users.length)].id, // 랜덤 판매자 선택
-        },
-      });
-    }),
-  );
+  console.log('📚 Seeding books...');
 
-  console.log('✅ Books seeded!');
+  const books = [
+    {
+      title: '해리 포터와 마법사의 돌',
+      author: 'J.K. 롤링',
+      publisher: '문학수첩',
+      price: 15000,
+      status: BookStatus.NEW, // ✅ ENUM 타입으로 변경
+    },
+    {
+      title: '자바스크립트 완벽 가이드',
+      author: 'David Flanagan',
+      publisher: '한빛미디어',
+      price: 38000,
+      status: BookStatus.LIKE_NEW, // ✅ ENUM 타입으로 변경
+    },
+    {
+      title: '나미야 잡화점의 기적',
+      author: '히가시노 게이고',
+      publisher: '현대문학',
+      price: 14000,
+      status: BookStatus.GOOD, // ✅ ENUM 타입으로 변경
+    },
+    {
+      title: '데미안',
+      author: '헤르만 헤세',
+      publisher: '민음사',
+      price: 11000,
+      status: BookStatus.ACCEPTABLE, // ✅ ENUM 타입으로 변경
+    },
+    {
+      title: '모비딕',
+      author: '허먼 멜빌',
+      publisher: '열린책들',
+      price: 19000,
+      status: BookStatus.LIKE_NEW, // ✅ ENUM 타입으로 변경
+    },
+  ];
 
-  console.log('🎉 Seeding complete!');
+  const sellers = await prisma.user.findMany({ take: 5 });
+
+  for (let i = 0; i < books.length; i++) {
+    await prisma.book.create({
+      data: {
+        ...books[i],
+        sellerId: sellers[i % sellers.length].id,
+      },
+    });
+  }
+
+  console.log('✅ Book seeding completed.');
 }
 
 main()
-  .catch((e) => {
-    console.error('❌ Seeding failed:', e);
-    process.exit(1);
-  })
+  .catch((e) => console.error(e))
   .finally(async () => {
     await prisma.$disconnect();
   });

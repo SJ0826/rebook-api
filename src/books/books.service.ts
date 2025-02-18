@@ -6,8 +6,7 @@ import { BookStatus } from '@prisma/client';
 
 @Injectable()
 export class BooksService {
-  constructor(private prisma: PrismaService) {
-  }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * 책 등록 (Create)
@@ -44,17 +43,21 @@ export class BooksService {
   /**
    * 책 검색
    */
-  async searchBooks(query?: string, filters?: { minPrice?: number, maxPrice?: number, status?: BookStatus }) {
+  async searchBooks(
+    query?: string,
+    filters?: { minPrice?: number; maxPrice?: number; status?: BookStatus },
+  ) {
     return this.prisma.book.findMany({
       where: {
         AND: [
           query
             ? {
-              OR: [
-                { title: { contains: query, mode: 'insensitive' } },
-                { author: { contains: query, mode: 'insensitive' } },
-              ],
-            } : {},
+                OR: [
+                  { title: { contains: query, mode: 'insensitive' } },
+                  { author: { contains: query, mode: 'insensitive' } },
+                ],
+              }
+            : {},
           filters?.minPrice ? { price: { gte: filters.minPrice } } : {},
           filters?.maxPrice ? { price: { lte: filters.maxPrice } } : {},
           filters?.status ? { status: filters.status } : {},
