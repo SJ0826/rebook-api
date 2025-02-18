@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
+import { BookStatus } from '@prisma/client';
 
 @Injectable()
 export class BooksService {
@@ -43,14 +44,22 @@ export class BooksService {
   /**
    * 책 검색
    */
-  async searchBooks(query?: string) {
+  async searchBooks(query?: string, filters?: { minPrice?: number, maxPrice?: number, status?: BookStatus }) {
     return this.prisma.book.findMany({
-      where: query && query.trim() !== '' ? {
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { author: { contains: query, mode: 'insensitive' } },
+      where: {
+        AND: [
+          query
+            ? {
+              OR: [
+                { title: { contains: query, mode: 'insensitive' } },
+                { author: { contains: query, mode: 'insensitive' } },
+              ],
+            } : {},
+          filters?.minPrice ? { price: { gte: filters.minPrice } } : {},
+          filters?.maxPrice ? { price: { lte: filters.maxPrice } } : {},
+          filters?.status ? { status: filters.status } : {},
         ],
-      } : {},
+      },
       orderBy: {
         createdAt: 'desc',
       },
