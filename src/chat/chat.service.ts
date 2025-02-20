@@ -3,12 +3,13 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ChatService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {
+  }
 
   /**
    * 특정 채팅방의 메시지 조회
    */
-  async getMessages(chatRoomId: number) {
+  async getMessages(chatRoomId: bigint) {
     return this.prisma.message.findMany({
       where: { chatRoomId },
       orderBy: { createdAt: 'asc' },
@@ -18,7 +19,7 @@ export class ChatService {
   /**
    * 사용자별 읽지 않은 메시지 개수 조회
    */
-  async getUnreadMessagesCount(userId: number) {
+  async getUnreadMessagesCount(userId: bigint) {
     return this.prisma.chatRoom.findMany({
       where: { UserChatRoom: { some: { userId } } },
       select: {
@@ -37,7 +38,7 @@ export class ChatService {
   /**
    * 사용자가 채팅방을 읽었을 때 'lastReadAt' 업데이트
    */
-  async markChatAsRead(userId: number, chatRoomId: number) {
+  async markChatAsRead(userId: bigint, chatRoomId: bigint) {
     return this.prisma.userChatRoom.update({
       where: { userId_chatRoomId: { userId, chatRoomId } },
       data: { lastReadAt: new Date() },

@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { BooksModule } from './books/books.module';
@@ -19,7 +17,8 @@ import { ChatModule } from './chat/chat.module';
     OrdersModule,
     ChatModule,
   ],
-  controllers: [AppController],
-  providers: [AppService, ChatGateway, ChatService],
+  controllers: [],
+  providers: [ChatGateway, ChatService],
 })
-export class AppModule {}
+export class AppModule {
+}

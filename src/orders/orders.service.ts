@@ -1,15 +1,12 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {
+  }
 
   /**
    * 거래 요청 (주문 생성)
@@ -48,8 +45,8 @@ export class OrdersService {
    * 거래 상태 변경 (판매자가 승인/취소 가능)
    */
   async updateOrderStatus(
-    orderId: number,
-    sellerId: number,
+    orderId: bigint,
+    sellerId: bigint,
     updateOrderDto: UpdateOrderDto,
   ) {
     const { status } = updateOrderDto;
@@ -61,7 +58,7 @@ export class OrdersService {
     if (!order) throw new NotFoundException('해당 주문을 찾을 수 없습니다.');
 
     // 판매자만 거래 상태 변경 가능
-    if (BigInt(order.sellerId) !== BigInt(sellerId)) {
+    if (order.sellerId !== sellerId) {
       throw new ForbiddenException('이 주문을 변경할 권한이 없습니다.');
     }
 
@@ -74,7 +71,7 @@ export class OrdersService {
   /**
    * 구매 내역 조회
    */
-  async getBuyerOrders(buyerId: number) {
+  async getBuyerOrders(buyerId: bigint) {
     return this.prisma.order.findMany({
       where: { buyerId },
       include: { book: true },
@@ -84,7 +81,7 @@ export class OrdersService {
   /**
    * 판매 내역 조회
    */
-  async getSellerOrders(sellerId: number) {
+  async getSellerOrders(sellerId: bigint) {
     return this.prisma.order.findMany({
       where: { sellerId },
       include: { book: true },

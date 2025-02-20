@@ -1,12 +1,8 @@
-import {
-  BadRequestException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
+import { UserRegisterDto } from './dto/user-register.dto';
+import { UserLoginDto } from './dto/user-login.dto';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
@@ -14,12 +10,13 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-  ) {}
+  ) {
+  }
 
   /**
    * 회원가입
    */
-  async register(dto: RegisterDto) {
+  async register(dto: UserRegisterDto) {
     const { email, password, name } = dto;
 
     // 이메일 중복 체크
@@ -46,7 +43,7 @@ export class AuthService {
   /**
    * 로그인
    */
-  async login(dto: LoginDto) {
+  async login(dto: UserLoginDto) {
     const { email, password } = dto;
 
     // 이메일 확인

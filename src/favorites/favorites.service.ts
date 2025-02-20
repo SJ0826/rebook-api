@@ -1,14 +1,11 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateFavoriteDto } from './dto/create-favorite.dto';
 
 @Injectable()
 export class FavoritesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {
+  }
 
   /**
    * 책 찜하기
@@ -30,7 +27,7 @@ export class FavoritesService {
   /**
    * 찜한 책 목록 조회
    */
-  async findAll(userId: number) {
+  async findAll(userId: bigint) {
     return this.prisma.favorite.findMany({
       where: { userId },
       include: { book: true },
@@ -40,7 +37,7 @@ export class FavoritesService {
   /**
    * 찜 해제
    */
-  async remove(userId: number, bookId: number) {
+  async remove(userId: bigint, bookId: bigint) {
     const favorite = await this.prisma.favorite.findFirst({
       where: { userId, bookId },
     });
