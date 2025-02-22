@@ -1,6 +1,7 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBigint } from '../../common/decorators/IsBigint';
+import { IsBigint } from '../../common/decorators/is-bigint.decorator';
+import { TransformToBigInt } from '../../common/decorators/transform-to-bigint.decorator';
 
 export class CreateBookDto {
   @ApiProperty({ example: '해리 포터와 마법사의 돌' })
@@ -16,7 +17,7 @@ export class CreateBookDto {
   publisher: string;
 
   @ApiProperty({ example: 15000 })
-  @IsBigint({ message: 'id 유효한 bigint 값이어야 합니다.' })
+  @IsNumber()
   price: number;
 
   @ApiProperty({ example: '해리 포터와 마법사의 돌 설명' })
@@ -25,6 +26,7 @@ export class CreateBookDto {
   description: string;
 
   @ApiProperty()
-  @IsBigint({ message: 'id 유효한 bigint 값이어야 합니다.' })
+  @TransformToBigInt()
+  @IsBigint()
   sellerId: bigint;
 }

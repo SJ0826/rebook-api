@@ -1,8 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBigint } from '../../common/decorators/IsBigint';
+import { IsBigint } from '../../common/decorators/is-bigint.decorator';
+import { TransformToBigInt } from '../../common/decorators/transform-to-bigint.decorator';
 
 export class CreateOrderDto {
   @ApiProperty()
-  @IsBigint({ message: 'id 유효한 bigint 값이어야 합니다.' })
+  @TransformToBigInt()
+  @IsBigint()
   bookId: bigint;
 }
