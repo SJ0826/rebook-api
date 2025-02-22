@@ -6,8 +6,7 @@ import { BookStatus } from '@prisma/client';
 
 @Injectable()
 export class BooksService {
-  constructor(private prisma: PrismaService) {
-  }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * 책 등록 (Create)
@@ -15,7 +14,9 @@ export class BooksService {
   async create(createBookDto: CreateBookDto) {
     const { sellerId } = createBookDto;
 
-    const isExistSellerId = this.prisma.user.findUnique({ where: { id: sellerId } });
+    const isExistSellerId = await this.prisma.user.findUnique({
+      where: { id: sellerId },
+    });
     if (!isExistSellerId) {
       throw new NotFoundException('유효한 사용자 아이디가 아닙니다.');
     }
@@ -59,11 +60,11 @@ export class BooksService {
         AND: [
           query
             ? {
-              OR: [
-                { title: { contains: query, mode: 'insensitive' } },
-                { author: { contains: query, mode: 'insensitive' } },
-              ],
-            }
+                OR: [
+                  { title: { contains: query, mode: 'insensitive' } },
+                  { author: { contains: query, mode: 'insensitive' } },
+                ],
+              }
             : {},
           filters?.minPrice ? { price: { gte: filters.minPrice } } : {},
           filters?.maxPrice ? { price: { lte: filters.maxPrice } } : {},

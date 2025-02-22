@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ResponseInterceptor } from './common/interceptor/response.interceptor';
+import { HttpExceptionFilter } from './common/filter/http-exception.filter';
 
 async function bootstrap() {
   BigInt.prototype.toJSON = function () {
@@ -22,6 +23,10 @@ async function bootstrap() {
 
   // global interceptor
   app.useGlobalInterceptors(new ResponseInterceptor());
+
+  // http exception filter
+  app.useGlobalFilters(new HttpExceptionFilter());
+
   await app.listen(process.env.PORT ?? 3000);
 }
 
