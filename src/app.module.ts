@@ -7,6 +7,7 @@ import { OrdersModule } from './orders/orders.module';
 import { ChatGateway } from './chat/chat.gateway';
 import { ChatService } from './chat/chat.service';
 import { ChatModule } from './chat/chat.module';
+import { S3Service } from './s3/s3.service';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { ChatModule } from './chat/chat.module';
     ChatModule,
   ],
   controllers: [],
-  providers: [ChatGateway, ChatService],
+  providers: [ChatGateway, ChatService, S3Service],
 })
 export class AppModule {
 }
