@@ -36,21 +36,30 @@ enum BookStatus {
 }
 
 model Book {
-  id          BigInt     @id @unique @default(autoincrement())
-  title       String     @db.VarChar(255)
-  author      String     @db.VarChar(100)
-  publisher   String     @db.VarChar(150)
+  id          BigInt      @id @unique @default(autoincrement())
+  title       String      @db.VarChar(255)
+  author      String      @db.VarChar(100)
+  publisher   String      @db.VarChar(150)
   price       BigInt
-  description String?    @db.Text
-  status      BookStatus @default(NEW)
-  seller      User       @relation("UserBooks", fields: [sellerId], references: [id])
-  sellerId    BigInt     @map("seller_id")
-  createdAt   DateTime   @default(now()) @map("created_at")
+  description String?     @db.Text
+  status      BookStatus  @default(NEW)
+  seller      User        @relation("UserBooks", fields: [sellerId], references: [id])
+  sellerId    BigInt      @map("seller_id")
+  createdAt   DateTime    @default(now()) @map("created_at")
   orders      Order[]
   favorites   Favorite[]
+  BookImage   BookImage[]
 
   @@index(fields: [title(ops: raw("gin_trgm_ops"))], type: Gin)
   @@index(fields: [author(ops: raw("gin_trgm_ops"))], type: Gin)
+}
+
+model BookImage {
+  id       BigInt  @id @unique @default(autoincrement())
+  book     Book?   @relation(fields: [bookId], references: [id])
+  bookId   BigInt? @map("book_id")
+  ImageUrl String  @map("image_url") @db.VarChar(255)
+  uuid     String  @db.VarChar()
 }
 
 enum OrderStatus {
