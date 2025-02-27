@@ -7,7 +7,7 @@ import { OrdersModule } from './orders/orders.module';
 import { ChatGateway } from './chat/chat.gateway';
 import { ChatService } from './chat/chat.service';
 import { ChatModule } from './chat/chat.module';
-import { S3Service } from './s3/s3.service';
+import { FileModule } from './file/file.module';
 
 @Module({
   imports: [
@@ -17,9 +17,8 @@ import { S3Service } from './s3/s3.service';
     FavoritesModule,
     OrdersModule,
     ChatModule,
+    FileModule,
   ],
-  controllers: [],
-  providers: [ChatGateway, ChatService, S3Service],
+  providers: [ChatGateway, ChatService],
 })
-export class AppModule {
-}
+export class AppModule {}

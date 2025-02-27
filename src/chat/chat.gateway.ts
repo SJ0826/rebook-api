@@ -1,4 +1,10 @@
-import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import {
+  ConnectedSocket,
+  MessageBody,
+  SubscribeMessage,
+  WebSocketGateway,
+  WebSocketServer,
+} from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChatService } from './chat.service';
@@ -39,7 +45,7 @@ export class ChatGateway {
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
     @MessageBody()
-      data: {
+    data: {
       chatRoomId: number;
       senderId: number;
       content: string;
