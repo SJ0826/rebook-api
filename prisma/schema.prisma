@@ -58,8 +58,8 @@ model BookImage {
   id       BigInt  @id @unique @default(autoincrement())
   book     Book?   @relation(fields: [bookId], references: [id])
   bookId   BigInt? @map("book_id")
-  ImageUrl String  @map("image_url") @db.VarChar(255)
-  uuid     String  @db.VarChar()
+  imageUrl String  @map("image_url") @db.VarChar(255)
+  uuid     String  @unique @db.VarChar()
 }
 
 enum OrderStatus {

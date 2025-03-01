@@ -9,12 +9,16 @@ import {
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
 import * as process from 'node:process';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class FileService {
   private readonly logger = new Logger(FileService.name);
 
-  constructor(@Inject('S3_CLIENT') private readonly s3: S3Client) {}
+  constructor(
+    @Inject('S3_CLIENT') private readonly s3: S3Client,
+    private readonly prisma: PrismaService,
+  ) {}
 
   /**
    * 다중 파일 업로드 + S3 URL 반환
@@ -61,6 +65,11 @@ export class FileService {
 
         // 4. S3 URL 생성
         const fileUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+
+        // 5. bookImage 테이블에 uuid 저장
+        await this.prisma.bookImage.create({
+          data: { uuid, imageUrl: fileUrl },
+        });
 
         return {
           uuid,

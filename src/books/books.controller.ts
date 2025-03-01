@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { BookStatus } from '@prisma/client';
@@ -38,8 +39,8 @@ export class BooksController {
     summary: '책 등록',
     description: '사용자가 새로운 책을 등록합니다.',
   })
-  createBook(@Body() createBookDto: CreateBookDto) {
-    return this.booksService.create(createBookDto);
+  createBook(@Body() createBookDto: CreateBookDto, @Req() req) {
+    return this.booksService.create(req.user.id, createBookDto);
   }
 
   // 책 수정

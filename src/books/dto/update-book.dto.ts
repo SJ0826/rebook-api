@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateBookDto {
@@ -11,6 +11,12 @@ export class UpdateBookDto {
   @IsOptional()
   @IsString()
   author?: string;
+
+  @ApiProperty({ example: ['uuid1', 'uuid2'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  uuids: string[];
 
   @ApiProperty({ example: '문학수첩' })
   @IsOptional()
