@@ -49,7 +49,7 @@ export class FileController {
     schema: {
       type: 'object',
       properties: {
-        files: {
+        images: {
           type: 'string',
           format: 'binary',
           description: '업로드할 파일 (다중 가능)',
@@ -63,10 +63,6 @@ export class FileController {
       '이미지 파일을 업로드하고 UUID를 반환받습니다. <br /> <li>이미지 파일의 최대용량: 7MB</li> <br /> <li>허용 확장자: gif, jpeg, png</li>',
   })
   async uploadImages(@UploadedFiles() images: Express.Multer.File[]) {
-    // if (!files || files.length === 0) {
-    //   throw new BadRequestException('파일을 하나 이상 업로드해야 합니다.');
-    // }
-
     return await this.fileService.uploadImages(images);
   }
 }

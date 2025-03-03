@@ -37,7 +37,10 @@ export class BooksController {
   @Post()
   @ApiOperation({
     summary: '책 등록',
-    description: '사용자가 새로운 책을 등록합니다.',
+    description:
+      '사용자가 새로운 책을 등록합니다.' +
+      '<li>sort 값은 각 이미지의 순서를 나타냅니다.</li> ' +
+      '<li>sort의 값이 0인 이미지가 대표사진으로 등록됩니다.</li>',
   })
   createBook(@Body() createBookDto: CreateBookDto, @Req() req) {
     return this.booksService.create(req.user.id, createBookDto);
@@ -45,7 +48,13 @@ export class BooksController {
 
   // 책 수정
   @Patch(':id')
-  @ApiOperation({ summary: '책 수정', description: '책의 내용을 수정합니다.' })
+  @ApiOperation({
+    summary: '책 수정',
+    description:
+      '책의 내용을 수정합니다.' +
+      ' <li>sort 값은 각 이미지의 순서를 나타냅니다.</li>' +
+      '<li>sort의 값이 0인 이미지가 대표사진으로 등록됩니다.</li>',
+  })
   updateBook(@Param('id') id: string, @Body() updateBookDto: UpdateBookDto) {
     return this.booksService.update(Number(id), updateBookDto);
   }

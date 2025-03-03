@@ -10,10 +10,14 @@ export class CreateBookDto {
   @IsString()
   author: string;
 
-  @ApiProperty({ example: ['uuid1', 'uuid2'] })
+  @ApiProperty({
+    example: [
+      { uuid: 'uuid1', sort: 0 },
+      { uuid: 'uuid2', sort: 1 },
+    ],
+  })
   @IsArray()
-  @IsString({ each: true })
-  uuids: string[];
+  imageUuids: { uuid: string; sort: number }[];
 
   @ApiProperty({ example: '문학수첩' })
   @IsString()
