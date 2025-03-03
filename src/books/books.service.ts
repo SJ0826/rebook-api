@@ -54,7 +54,7 @@ export class BooksService {
     const book = await this.prisma.book.findUnique({
       select: {
         id: true,
-        BookImage: {
+        bookImage: {
           select: {
             imageUrl: true,
           },
@@ -170,16 +170,16 @@ export class BooksService {
       },
       orderBy: { createdAt: 'desc' },
       include: {
-        BookImage: {
+        bookImage: {
           select: { imageUrl: true }, // 이미지 URL만 가져옴
         },
       },
     });
 
     // 2. 이미지 URL 배열 변환 후 반환
-    return books.map(({ BookImage, ...book }) => ({
+    return books.map(({ bookImage, ...book }) => ({
       ...book,
-      imageUrls: BookImage.map((img) => img.imageUrl), // 이미지 URL 리스트 추가
+      imageUrls: bookImage.map((img) => img.imageUrl), // 이미지 URL 리스트 추가
     }));
   }
 }
