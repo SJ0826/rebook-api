@@ -16,10 +16,9 @@ export class ResponseInterceptor<T>
     next: CallHandler<T>,
   ): Observable<ResponseDto<T>> {
     const httpResponse = context.switchToHttp().getResponse();
-    const statusCode = httpResponse.statusCode;
     return next.handle().pipe(
       map((data) => {
-        return new ResponseDto(true, statusCode, '성공', data);
+        return new ResponseDto(true, '성공', data);
       }),
     );
   }

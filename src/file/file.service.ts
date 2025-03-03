@@ -23,7 +23,7 @@ export class FileService {
   /**
    * 다중 파일 업로드 + S3 URL 반환
    */
-  async uploadFiles(files: Express.Multer.File[]) {
+  async uploadImages(files: Express.Multer.File[]) {
     if (!files || files.length === 0) {
       throw new BadRequestException('파일을 하나 이상 업로드해야 합니다.');
     }
@@ -32,7 +32,7 @@ export class FileService {
     const region = process.env.AWS_REGION;
     const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
-    const uploadedFiles = await Promise.all(
+    const uploadedImages = await Promise.all(
       files.map(async (file) => {
         const uuid = uuidv4();
         const ext = file.originalname.split('.').pop();
@@ -64,23 +64,22 @@ export class FileService {
         );
 
         // 4. S3 URL 생성
-        const fileUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+        const imageFileUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 
         // 5. bookImage 테이블에 uuid 저장
         await this.prisma.bookImage.create({
-          data: { uuid, imageUrl: fileUrl },
+          data: { uuid, imageUrl: imageFileUrl },
         });
 
         return {
           uuid,
-          url: fileUrl,
-          filename: `${uuid}.${ext}`,
+          imageUrls: imageFileUrl,
         };
       }),
     );
 
     return {
-      files: uploadedFiles,
+      files: uploadedImages,
     };
   }
 }

@@ -6,7 +6,7 @@ import { BookStatus } from '@prisma/client';
 
 @Injectable()
 export class BooksService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * 책 등록 (Create)
@@ -49,6 +49,18 @@ export class BooksService {
     const imageUrls = await this.prisma.bookImage.findMany({
       where: { bookId: newBook.id },
       select: { imageUrl: true },
+    });
+
+    const book = await this.prisma.book.findUnique({
+      select: {
+        id: true,
+        BookImage: {
+          select: {
+            imageUrl: true,
+          },
+        },
+      },
+      where: { id: newBook.id },
     });
 
     return { ...newBook, imageUrls: imageUrls.map((img) => img.imageUrl) };

@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Controller,
   Post,
   UploadedFiles,
@@ -17,11 +16,10 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { Express } from 'express';
 
-@Controller('file')
+@Controller('images')
 @UseGuards(JwtAuthGuard)
-@ApiTags('파일')
+@ApiTags('이미지 파일 업로드')
 @ApiBearerAuth()
 @ApiResponse({ status: 200, description: '성공' })
 @ApiResponse({ status: 401, description: '인증 실패' })
@@ -33,14 +31,11 @@ export class FileController {
    */
   @Post('upload')
   @UseInterceptors(
-    FilesInterceptor('files', 10, {
+    FilesInterceptor('images', 10, {
       limits: { fileSize: 7 * 1024 * 1024 }, // 최대 7MB 제한
     }),
   )
   @ApiConsumes('multipart/form-data')
-  // @ApiUnsupportedMediaTypeResponse({
-  //   description: 'gif, jpeg, png 형식의 파일이 아닌 경우',
-  // })
   @ApiResponse({
     status: 413,
     description: '이미지 용량 초과',
@@ -49,7 +44,6 @@ export class FileController {
     status: 415,
     description: 'gif, jpeg, png 형식의 파일이 아닌 경우',
   })
-  // @ApiPayloadTooLargeResponse({ description: '이미지 용량 초과' })
   @ApiBody({
     description: '업로드할 이미지 파일들',
     schema: {
@@ -65,13 +59,14 @@ export class FileController {
   })
   @ApiOperation({
     summary: '이미지 파일 업로드',
-    description: '이미지 파일을 업로드하고 UUID를 반환받습니다.',
+    description:
+      '이미지 파일을 업로드하고 UUID를 반환받습니다. <br /> <li>이미지 파일의 최대용량: 7MB</li> <br /> <li>허용 확장자: gif, jpeg, png</li>',
   })
-  async uploadFiles(@UploadedFiles() files: Express.Multer.File[]) {
-    if (!files || files.length === 0) {
-      throw new BadRequestException('파일을 하나 이상 업로드해야 합니다.');
-    }
+  async uploadImages(@UploadedFiles() images: Express.Multer.File[]) {
+    // if (!files || files.length === 0) {
+    //   throw new BadRequestException('파일을 하나 이상 업로드해야 합니다.');
+    // }
 
-    return await this.fileService.uploadFiles(files);
+    return await this.fileService.uploadImages(images);
   }
 }
