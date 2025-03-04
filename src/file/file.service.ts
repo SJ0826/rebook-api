@@ -30,6 +30,7 @@ export class FileService {
 
     const bucket = process.env.AWS_S3_BUCKET_NAME;
     const region = process.env.AWS_REGION;
+    const cloudFrontDomain = process.env.AWS_CLOUDFRONT_DOMAIN;
     const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
     const uploadedImages = await Promise.all(
@@ -64,7 +65,10 @@ export class FileService {
         );
 
         // 4. S3 URL 생성
-        const imageFileUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+        // const imageFileUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+
+        // 4. CloudFront URL 생성
+        const imageFileUrl = `https://${cloudFrontDomain}/${key}`;
 
         // 5. bookImage 테이블에 uuid 저장
         await this.prisma.bookImage.create({
