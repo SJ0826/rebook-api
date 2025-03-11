@@ -1,46 +1,73 @@
-import {
-  BadRequestException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRegisterDto } from './dto/user-register.dto';
 import { UserLoginDto } from './dto/user-login.dto';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
-    private jwtService: JwtService,
-  ) {}
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly config: ConfigService,
+  ) {
+  }
+
 
   /**
    * 회원가입
    */
   async register(dto: UserRegisterDto) {
-    const { email, password, name } = dto;
+    return this.prisma.$transaction(async (tx) => {
+      const { email, password, name } = dto;
 
-    // 이메일 중복 체크
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email },
-    });
-    if (existingUser) {
-      throw new BadRequestException('이미 사용중인 이메일입니다.');
-    }
+      // 이메일 중복 체크
+      const existingUser = await tx.user.findUnique({
+        where: { email },
+      });
+      if (existingUser) {
+        throw new BadRequestException('이미 사용중인 이메일입니다.');
+      }
 
-    // 비밀번호 해싱
-    const hashedPassword: string = await bcrypt.hash(password, 10);
+      // 비밀번호 해싱
+      const hashedPassword: string = await bcrypt.hash(password, 10);
 
-    // 사용자 생성
-    return this.prisma.user.create({
-      data: {
+      // 사용자 생성
+      const user = await tx.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          name,
+        },
+      });
+
+      // Access Token & Refresh Token 생성
+      const accessToken = this.jwtService.sign(
+        { userId: user.id },
+        { secret: this.config.get<string>('JWT_SECRET'), expiresIn: '15m' },
+      );
+      const refreshToken = this.jwtService.sign(
+        { userId: user.id },
+        { secret: this.config.get<string>('JWT_SECRET'), expiresIn: '7d' },
+      );
+
+      // Refresh Token을 해싱 후 저장
+      const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+      await tx.user.update({
+        where: { id: user.id },
+        data: { refreshToken: hashedRefreshToken },
+      });
+
+      return {
         email,
-        password: hashedPassword,
         name,
-      },
+        accessToken,
+        refreshToken,
+      };
     });
+
   }
 
   /**
@@ -61,15 +88,8 @@ export class AuthService {
       throw new BadRequestException('이메일 또는 비밀번호가 잘못되었습니다');
     }
 
-    // Access Token & Refresh Token 생성
-    const accessToken = this.jwtService.sign(
-      { userId: user.id },
-      { expiresIn: '15m' },
-    );
-    const refreshToken = this.jwtService.sign(
-      { userId: user.id },
-      { expiresIn: '7d' },
-    );
+// JWT 발급
+    const { accessToken, refreshToken } = await this.generateTokens(user.id);
 
     // Refresh Token을 해싱 후 저장
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
@@ -133,5 +153,24 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken: newRefreshToken };
+  }
+
+  /**
+   * JWT 토큰 생성
+   */
+  private async generateTokens(userId: bigint) {
+    const jwtSecret = this.config.get<string>('JWT_SECRET');
+
+    const accessToken = this.jwtService.sign(
+      { userId },
+      { secret: jwtSecret, expiresIn: '15m' },
+    );
+
+    const refreshToken = this.jwtService.sign(
+      { userId },
+      { secret: jwtSecret, expiresIn: '7d' },
+    );
+
+    return { accessToken, refreshToken };
   }
 }
