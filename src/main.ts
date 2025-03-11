@@ -6,11 +6,15 @@ import { HttpExceptionFilter } from './common/filter/http-exception.filter';
 import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
-  BigInt.prototype.toJSON = function () {
+  BigInt.prototype.toJSON = function() {
     const int = Number.parseInt(this.toString());
     return int ?? this.toString();
   };
+
   const app = await NestFactory.create(AppModule);
+
+  // cors error
+  app.enableCors();
 
   // swagger setting
   const config = new DocumentBuilder()
@@ -25,9 +29,10 @@ async function bootstrap() {
   // global interceptor
   app.useGlobalInterceptors(new ResponseInterceptor());
 
-  // http exception filter
+  // global http exception filter
   app.useGlobalFilters(new HttpExceptionFilter());
 
+  // global pips
   app.useGlobalPipes(new ValidationPipe());
 
   await app.listen(process.env.PORT ?? 3000);
