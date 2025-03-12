@@ -5,6 +5,7 @@ import { UserRegisterDto } from './dto/user-register.dto';
 import { UserLoginDto } from './dto/user-login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { Response, CookieOptions } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -15,11 +16,19 @@ export class AuthService {
   ) {
   }
 
+  private setCookieOptions(): CookieOptions {
+    return {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+    };
+  }
 
   /**
    * 회원가입
    */
-  async register(dto: UserRegisterDto) {
+  async register(dto: UserRegisterDto, response: Response) {
     return this.prisma.$transaction(async (tx) => {
       const { email, password, name } = dto;
 
@@ -60,20 +69,19 @@ export class AuthService {
         data: { refreshToken: hashedRefreshToken },
       });
 
+      // Set refresh token as HTTP-only cookie
+      response.cookie('refreshToken', refreshToken, this.setCookieOptions());
+
       return {
-        email,
-        name,
         accessToken,
-        refreshToken,
       };
     });
-
   }
 
   /**
    * 로그인
    */
-  async login(dto: UserLoginDto) {
+  async login(dto: UserLoginDto, response: Response) {
     const { email, password } = dto;
 
     // 이메일 확인
@@ -88,7 +96,7 @@ export class AuthService {
       throw new BadRequestException('이메일 또는 비밀번호가 잘못되었습니다');
     }
 
-// JWT 발급
+    // JWT 발급
     const { accessToken, refreshToken } = await this.generateTokens(user.id);
 
     // Refresh Token을 해싱 후 저장
@@ -98,7 +106,12 @@ export class AuthService {
       data: { refreshToken: hashedRefreshToken },
     });
 
-    return { accessToken, refreshToken };
+    // Set refresh token as HTTP-only cookie
+    response.cookie('refreshToken', refreshToken, this.setCookieOptions());
+
+    return {
+      accessToken,
+    };
   }
 
   /**
@@ -172,5 +185,20 @@ export class AuthService {
     );
 
     return { accessToken, refreshToken };
+  }
+
+  /**
+   * 로그아웃
+   */
+  async logout(response: Response, userId: bigint) {
+
+    response.clearCookie('refreshToken');
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: null },
+    });
+
+    return { message: '로그아웃 성공' };
   }
 }
