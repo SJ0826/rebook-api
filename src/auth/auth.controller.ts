@@ -5,10 +5,8 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Response } from 'express';
-
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { UserRegisterDto } from './dto/user-register.dto';
 import { UserLoginDto } from './dto/user-login.dto';
 
@@ -32,7 +30,7 @@ export class AuthController {
 
   @Post('login')
   @ApiOperation({
-    summary: '사용자 로그인', 
+    summary: '사용자 로그인',
     description: '사용자가 로그인을 진행합니다.',
   })
   @ApiResponse({ status: 200, description: '회원가입 성공' })
@@ -52,8 +50,8 @@ export class AuthController {
   @ApiResponse({ status: 200, description: '성공' })
   @ApiResponse({ status: 401, description: '인증 실패' })
   @ApiBearerAuth()
-  async refresh(@Body() { refreshToken }: RefreshTokenDto) {
-    return this.authService.refreshToken(refreshToken);
+  async refresh(@Req() req: Request) {
+    return this.authService.refreshToken(req.cookies.refreshToken);
   }
 
   @Post('logout')

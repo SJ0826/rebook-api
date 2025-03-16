@@ -1,11 +1,15 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRegisterDto } from './dto/user-register.dto';
 import { UserLoginDto } from './dto/user-login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { Response, CookieOptions } from 'express';
+import { CookieOptions, Response } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -13,17 +17,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
-  ) {
-  }
-
-  private setCookieOptions(): CookieOptions {
-    return {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
-      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-    };
-  }
+  ) {}
 
   /**
    * 회원가입
@@ -169,9 +163,32 @@ export class AuthService {
   }
 
   /**
+   * 로그아웃
+   */
+  async logout(response: Response, userId: bigint) {
+    response.clearCookie('refreshToken');
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: null },
+    });
+
+    return { message: '로그아웃 성공' };
+  }
+
+  private setCookieOptions(): CookieOptions {
+    return {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+    };
+  }
+
+  /**
    * JWT 토큰 생성
    */
-  private async generateTokens(userId: bigint) {
+  private generateTokens(userId: bigint) {
     const jwtSecret = this.config.get<string>('JWT_SECRET');
 
     const accessToken = this.jwtService.sign(
@@ -185,20 +202,5 @@ export class AuthService {
     );
 
     return { accessToken, refreshToken };
-  }
-
-  /**
-   * 로그아웃
-   */
-  async logout(response: Response, userId: bigint) {
-
-    response.clearCookie('refreshToken');
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { refreshToken: null },
-    });
-
-    return { message: '로그아웃 성공' };
   }
 }
