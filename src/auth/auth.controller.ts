@@ -1,13 +1,12 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Req, Res } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { UserRegisterDto } from './dto/user-register.dto';
 import { UserLoginDto } from './dto/user-login.dto';
 
@@ -22,8 +21,11 @@ export class AuthController {
     description: '사용자가 회원가입을 진행합니다.',
   })
   @ApiResponse({ status: 200, description: '회원가입 성공' })
-  async register(@Body() userRegisterDto: UserRegisterDto) {
-    return this.authService.register(userRegisterDto);
+  async register(
+    @Body() userRegisterDto: UserRegisterDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    return this.authService.register(userRegisterDto, response);
   }
 
   @Post('login')
@@ -33,8 +35,11 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: '회원가입 성공' })
   @ApiResponse({ status: 401, description: '인증 실패' })
-  async login(@Body() userLoginDto: UserLoginDto) {
-    return this.authService.login(userLoginDto);
+  async login(
+    @Body() userLoginDto: UserLoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    return this.authService.login(userLoginDto, response);
   }
 
   @Post('refresh')
@@ -45,7 +50,21 @@ export class AuthController {
   @ApiResponse({ status: 200, description: '성공' })
   @ApiResponse({ status: 401, description: '인증 실패' })
   @ApiBearerAuth()
-  async refresh(@Body() { refreshToken }: RefreshTokenDto) {
-    return this.authService.refreshToken(refreshToken);
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    return this.authService.refreshToken(req.cookies.refreshToken, response);
+  }
+
+  @Post('logout')
+  @ApiOperation({
+    summary: '로그아웃',
+    description: '사용자가 로그아웃을 진행합니다.',
+  })
+  @ApiResponse({ status: 200, description: '로그아웃 성공' })
+  @ApiBearerAuth()
+  async logout(@Res({ passthrough: true }) response: Response, @Req() req) {
+    return this.authService.logout(response, req.user.id);
   }
 }
