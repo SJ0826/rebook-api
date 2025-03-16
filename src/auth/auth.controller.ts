@@ -50,8 +50,11 @@ export class AuthController {
   @ApiResponse({ status: 200, description: '성공' })
   @ApiResponse({ status: 401, description: '인증 실패' })
   @ApiBearerAuth()
-  async refresh(@Req() req: Request) {
-    return this.authService.refreshToken(req.cookies.refreshToken);
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    return this.authService.refreshToken(req.cookies.refreshToken, response);
   }
 
   @Post('logout')

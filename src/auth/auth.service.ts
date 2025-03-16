@@ -91,7 +91,7 @@ export class AuthService {
     }
 
     // JWT 발급
-    const { accessToken, refreshToken } = await this.generateTokens(user.id);
+    const { accessToken, refreshToken } = this.generateTokens(user.id);
 
     // Refresh Token을 해싱 후 저장
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
@@ -111,7 +111,7 @@ export class AuthService {
   /**
    * AccessToken과 RefreshToken을 새로 갱신합니다.
    */
-  async refreshToken(refreshToken: string) {
+  async refreshToken(refreshToken: string, response: Response) {
     let payload;
 
     // 1. RefreshToken에서 userId 추출
@@ -159,7 +159,10 @@ export class AuthService {
       data: { refreshToken: hashedNewRefreshToken },
     });
 
-    return { accessToken, refreshToken: newRefreshToken };
+    // 7. Set refresh token as HTTP-only cookie
+    response.cookie('refreshToken', refreshToken, this.setCookieOptions());
+
+    return { accessToken };
   }
 
   /**
