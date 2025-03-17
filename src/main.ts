@@ -1,12 +1,13 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ValidationPipe } from '@nestjs/common';
+import * as cookieParser from 'cookie-parser';
+import { AppModule } from './app.module';
 import { ResponseInterceptor } from './common/interceptor/response.interceptor';
 import { HttpExceptionFilter } from './common/filter/http-exception.filter';
-import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
-  BigInt.prototype.toJSON = function() {
+  BigInt.prototype.toJSON = function () {
     const int = Number.parseInt(this.toString());
     return int ?? this.toString();
   };
@@ -17,7 +18,9 @@ async function bootstrap() {
   app.enableCors({
     origin: ['http://localhost:3000'],
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
+  app.use(cookieParser());
 
   // swagger setting
   const config = new DocumentBuilder()
