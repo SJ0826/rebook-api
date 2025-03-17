@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
@@ -13,6 +14,8 @@ import { CookieOptions, Response } from 'express';
 
 @Injectable()
 export class AuthService {
+  private readonly logger: Logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -80,6 +83,7 @@ export class AuthService {
 
     // 이메일 확인
     const user = await this.prisma.user.findUnique({ where: { email } });
+
     if (!user) {
       throw new BadRequestException('이메일 또는 비밀번호가 잘못되었습니다');
     }
