@@ -164,7 +164,7 @@ export class AuthService {
     });
 
     // 7. Set refresh token as HTTP-only cookie
-    response.cookie('refreshToken', refreshToken, this.setCookieOptions());
+    response.cookie('refreshToken', newRefreshToken, this.setCookieOptions());
 
     return { accessToken };
   }
