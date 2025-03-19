@@ -120,4 +120,24 @@ export class BooksController {
       limit,
     });
   }
+
+  // 책 상세 조회
+  @Get(':id')
+  @ApiOperation({
+    summary: '책 상세 조회',
+    description:
+      '책 ID를 이용하여 특정 책의 상세 정보를 가져옵니다.' +
+      'bookImages의 첫번째 이미지는 대표사진입니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '책 상세 정보 조회 성공',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '책을 찾을 수 없음',
+  })
+  getBookDetail(@Param('id') id: bigint) {
+    return this.booksService.getBookDetail(id);
+  }
 }

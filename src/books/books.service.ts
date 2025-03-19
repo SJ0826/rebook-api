@@ -253,4 +253,42 @@ export class BooksService {
       })),
     };
   }
+
+  async getBookDetail(bookId: bigint) {
+    const book = await this.prisma.book.findUnique({
+      where: { id: bookId },
+      include: {
+        seller: {
+          select: { id: true, name: true },
+        },
+        bookImage: {
+          select: { imageUrl: true },
+        },
+      },
+    });
+
+    if (!book) {
+      throw new NotFoundException('해당 책을 찾을 수 없습니다.');
+    }
+
+    return {
+      success: true,
+      message: '성공',
+      data: {
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        publisher: book.publisher,
+        price: book.price,
+        description: book.description,
+        status: book.status,
+        createdAt: book.createdAt,
+        seller: {
+          id: book.seller.id,
+          name: book.seller.name,
+        },
+        bookImages: book.bookImage.map((img) => img.imageUrl),
+      },
+    };
+  }
 }
