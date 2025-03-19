@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,6 +11,8 @@ import { BookStatus } from '@prisma/client';
 
 @Injectable()
 export class BooksService {
+  private readonly logger: Logger = new Logger(BooksService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -167,8 +170,30 @@ export class BooksService {
    */
   async searchBooks(
     query?: string,
-    filters?: { minPrice?: number; maxPrice?: number; status?: BookStatus },
+    filters?: {
+      minPrice?: number;
+      maxPrice?: number;
+      status?: BookStatus;
+      sort?: string;
+    },
   ) {
+    let orderBy;
+
+    switch (filters?.sort) {
+      case 'oldest':
+        orderBy = { createdAt: 'asc' };
+        break;
+      case 'price_high':
+        orderBy = { price: 'desc' };
+        break;
+      case 'price_low':
+        orderBy = { price: 'asc' };
+        break;
+      case 'newest':
+      default:
+        orderBy = { createdAt: 'desc' };
+    }
+
     const books = await this.prisma.book.findMany({
       where: {
         AND: [
@@ -185,7 +210,7 @@ export class BooksService {
           filters?.status ? { status: filters.status } : {},
         ],
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: orderBy,
       include: {
         bookImage: { select: { imageUrl: true, sort: true } },
       },

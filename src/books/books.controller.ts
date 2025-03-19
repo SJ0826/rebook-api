@@ -25,7 +25,6 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('books')
-@UseGuards(JwtAuthGuard)
 @ApiTags('책')
 @ApiResponse({ status: 200, description: '성공' })
 @ApiResponse({ status: 401, description: '인증 실패' })
@@ -35,6 +34,7 @@ export class BooksController {
 
   // 책 생성
   @Post()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: '책 등록',
     description:
@@ -48,6 +48,7 @@ export class BooksController {
 
   // 책 수정
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: '책 수정',
     description:
@@ -61,6 +62,7 @@ export class BooksController {
 
   // 책 삭제
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: '책 삭제',
     description: '사용자가 책을 삭제합니다.',
@@ -84,12 +86,24 @@ export class BooksController {
     enum: BookStatus,
     description: '책 상태',
   })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    enum: ['newest', 'oldest', 'price_high', 'price_low'],
+    description: '정렬 옵션 (기본값: newest)',
+  })
   searchBooks(
     @Query('search') query?: string,
     @Query('minPrice') minPrice?: number,
     @Query('maxPrice') maxPrice?: number,
     @Query('status') status?: BookStatus,
+    @Query('sort') sort?: string,
   ) {
-    return this.booksService.searchBooks(query, { minPrice, maxPrice, status });
+    return this.booksService.searchBooks(query, {
+      minPrice,
+      maxPrice,
+      status,
+      sort,
+    });
   }
 }
