@@ -14,13 +14,6 @@ import { ConfigModule } from '@nestjs/config';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      // NODE_ENV 값에 따라 환경파일 경로를 지정합니다.
-      // envFilePath: [
-      //   path.resolve(
-      //     process.cwd(),
-      //     `src/config/env/.env.${process.env.NODE_ENV}`,
-      //   ),
-      // ],
       envFilePath: `.env.${process.env.NODE_ENV}`,
     }),
     AuthModule,

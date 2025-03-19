@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
@@ -13,6 +14,8 @@ import { CookieOptions, Response } from 'express';
 
 @Injectable()
 export class AuthService {
+  private readonly logger: Logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -80,6 +83,7 @@ export class AuthService {
 
     // 이메일 확인
     const user = await this.prisma.user.findUnique({ where: { email } });
+
     if (!user) {
       throw new BadRequestException('이메일 또는 비밀번호가 잘못되었습니다');
     }
@@ -141,7 +145,7 @@ export class AuthService {
     // 4. 새 accessToken 발급
     const accessToken = this.jwtService.sign(
       { userId: user.id },
-      { expiresIn: '15m' },
+      { expiresIn: '15m', secret: process.env.JWT_SECRET },
     );
 
     // 5. 새 refreshToken 발급
@@ -149,7 +153,7 @@ export class AuthService {
       {
         userId: user.id,
       },
-      { expiresIn: '7d' },
+      { expiresIn: '7d', secret: process.env.JWT_SECRET },
     );
 
     // 6. 새 refreshToken 해싱 후 DB 업데이트 (이전 토큰 무효화)
@@ -160,7 +164,7 @@ export class AuthService {
     });
 
     // 7. Set refresh token as HTTP-only cookie
-    response.cookie('refreshToken', refreshToken, this.setCookieOptions());
+    response.cookie('refreshToken', newRefreshToken, this.setCookieOptions());
 
     return { accessToken };
   }
@@ -169,21 +173,31 @@ export class AuthService {
    * 로그아웃
    */
   async logout(response: Response, userId: bigint) {
-    response.clearCookie('refreshToken');
+    try {
+      const cookieOptions = this.setCookieOptions();
+      response.clearCookie('refreshToken', cookieOptions);
 
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { refreshToken: null },
-    });
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { refreshToken: null },
+      });
 
-    return { message: '로그아웃 성공' };
+      return { message: '로그아웃 성공' };
+    } catch (error) {
+      this.logger.error('로그아웃 실패:', error);
+      throw error;
+    }
   }
 
+  /**
+   * 쿠키 설정
+   */
   private setCookieOptions(): CookieOptions {
     return {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/',
       expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     };
   }

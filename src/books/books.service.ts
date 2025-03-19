@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,6 +11,8 @@ import { BookStatus } from '@prisma/client';
 
 @Injectable()
 export class BooksService {
+  private readonly logger: Logger = new Logger(BooksService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -163,37 +166,91 @@ export class BooksService {
   }
 
   /**
-   * 책 검색 (Search)
+   * 책 검색 (Search) + 페이지네이션
    */
   async searchBooks(
     query?: string,
-    filters?: { minPrice?: number; maxPrice?: number; status?: BookStatus },
+    filters?: {
+      minPrice?: number;
+      maxPrice?: number;
+      status?: BookStatus;
+      sort?: string;
+      page?: number;
+      limit?: number;
+    },
   ) {
-    const books = await this.prisma.book.findMany({
-      where: {
-        AND: [
-          query
-            ? {
-                OR: [
-                  { title: { contains: query, mode: 'insensitive' } },
-                  { author: { contains: query, mode: 'insensitive' } },
-                ],
-              }
-            : {},
-          filters?.minPrice ? { price: { gte: filters.minPrice } } : {},
-          filters?.maxPrice ? { price: { lte: filters.maxPrice } } : {},
-          filters?.status ? { status: filters.status } : {},
-        ],
-      },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        bookImage: { select: { imageUrl: true, sort: true } },
-      },
-    });
+    let orderBy;
 
-    return books.map(({ bookImage, ...book }) => ({
-      ...book,
-      imageUrls: bookImage.find((image) => image.sort === 0)?.imageUrl,
-    }));
+    switch (filters?.sort) {
+      case 'oldest':
+        orderBy = { createdAt: 'asc' };
+        break;
+      case 'price_high':
+        orderBy = { price: 'desc' };
+        break;
+      case 'price_low':
+        orderBy = { price: 'asc' };
+        break;
+      case 'newest':
+      default:
+        orderBy = { createdAt: 'desc' };
+    }
+
+    const page = Number(filters?.page) || 1;
+    const limit = Number(filters?.limit) || 8;
+    const skip = (page - 1) * limit;
+
+    const [books, totalCount] = await this.prisma.$transaction([
+      this.prisma.book.findMany({
+        where: {
+          AND: [
+            query
+              ? {
+                  OR: [
+                    { title: { contains: query, mode: 'insensitive' } },
+                    { author: { contains: query, mode: 'insensitive' } },
+                  ],
+                }
+              : {},
+            filters?.minPrice ? { price: { gte: filters.minPrice } } : {},
+            filters?.maxPrice ? { price: { lte: filters.maxPrice } } : {},
+            filters?.status ? { status: filters.status } : {},
+          ],
+        },
+        orderBy: orderBy,
+        take: limit,
+        skip: skip,
+        include: {
+          bookImage: { select: { imageUrl: true, sort: true } },
+        },
+      }),
+      this.prisma.book.count({
+        where: {
+          AND: [
+            query
+              ? {
+                  OR: [
+                    { title: { contains: query, mode: 'insensitive' } },
+                    { author: { contains: query, mode: 'insensitive' } },
+                  ],
+                }
+              : {},
+            filters?.minPrice ? { price: { gte: filters.minPrice } } : {},
+            filters?.maxPrice ? { price: { lte: filters.maxPrice } } : {},
+            filters?.status ? { status: filters.status } : {},
+          ],
+        },
+      }),
+    ]);
+
+    return {
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      books: books.map(({ bookImage, ...book }) => ({
+        ...book,
+        imageUrls: bookImage.find((image) => image.sort === 0)?.imageUrl,
+      })),
+    };
   }
 }
