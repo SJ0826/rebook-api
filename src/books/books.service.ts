@@ -166,7 +166,7 @@ export class BooksService {
   }
 
   /**
-   * 책 검색 (Search)
+   * 책 검색 (Search) + 페이지네이션
    */
   async searchBooks(
     query?: string,
@@ -175,6 +175,8 @@ export class BooksService {
       maxPrice?: number;
       status?: BookStatus;
       sort?: string;
+      page?: number;
+      limit?: number;
     },
   ) {
     let orderBy;
@@ -194,31 +196,61 @@ export class BooksService {
         orderBy = { createdAt: 'desc' };
     }
 
-    const books = await this.prisma.book.findMany({
-      where: {
-        AND: [
-          query
-            ? {
-                OR: [
-                  { title: { contains: query, mode: 'insensitive' } },
-                  { author: { contains: query, mode: 'insensitive' } },
-                ],
-              }
-            : {},
-          filters?.minPrice ? { price: { gte: filters.minPrice } } : {},
-          filters?.maxPrice ? { price: { lte: filters.maxPrice } } : {},
-          filters?.status ? { status: filters.status } : {},
-        ],
-      },
-      orderBy: orderBy,
-      include: {
-        bookImage: { select: { imageUrl: true, sort: true } },
-      },
-    });
+    const page = Number(filters?.page) || 1;
+    const limit = Number(filters?.limit) || 8;
+    const skip = (page - 1) * limit;
 
-    return books.map(({ bookImage, ...book }) => ({
-      ...book,
-      imageUrls: bookImage.find((image) => image.sort === 0)?.imageUrl,
-    }));
+    const [books, totalCount] = await this.prisma.$transaction([
+      this.prisma.book.findMany({
+        where: {
+          AND: [
+            query
+              ? {
+                  OR: [
+                    { title: { contains: query, mode: 'insensitive' } },
+                    { author: { contains: query, mode: 'insensitive' } },
+                  ],
+                }
+              : {},
+            filters?.minPrice ? { price: { gte: filters.minPrice } } : {},
+            filters?.maxPrice ? { price: { lte: filters.maxPrice } } : {},
+            filters?.status ? { status: filters.status } : {},
+          ],
+        },
+        orderBy: orderBy,
+        take: limit,
+        skip: skip,
+        include: {
+          bookImage: { select: { imageUrl: true, sort: true } },
+        },
+      }),
+      this.prisma.book.count({
+        where: {
+          AND: [
+            query
+              ? {
+                  OR: [
+                    { title: { contains: query, mode: 'insensitive' } },
+                    { author: { contains: query, mode: 'insensitive' } },
+                  ],
+                }
+              : {},
+            filters?.minPrice ? { price: { gte: filters.minPrice } } : {},
+            filters?.maxPrice ? { price: { lte: filters.maxPrice } } : {},
+            filters?.status ? { status: filters.status } : {},
+          ],
+        },
+      }),
+    ]);
+
+    return {
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      books: books.map(({ bookImage, ...book }) => ({
+        ...book,
+        imageUrls: bookImage.find((image) => image.sort === 0)?.imageUrl,
+      })),
+    };
   }
 }

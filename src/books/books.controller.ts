@@ -92,18 +92,32 @@ export class BooksController {
     enum: ['newest', 'oldest', 'price_high', 'price_low'],
     description: '정렬 옵션 (기본값: newest)',
   })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: '페이지 번호 (기본값: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: '한 페이지에 보여줄 개수 (기본값: 8)',
+  })
   searchBooks(
     @Query('search') query?: string,
     @Query('minPrice') minPrice?: number,
     @Query('maxPrice') maxPrice?: number,
     @Query('status') status?: BookStatus,
     @Query('sort') sort?: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 8,
   ) {
     return this.booksService.searchBooks(query, {
       minPrice,
       maxPrice,
       status,
       sort,
+      page,
+      limit,
     });
   }
 }
