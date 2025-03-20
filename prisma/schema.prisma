@@ -35,17 +35,23 @@ enum BookStatus {
   ACCEPTABLE // 사용감 있음
 }
 
+enum BookSaleStatus {
+  FOR_SALE // 판매 중
+  SOLD // 거래 완료
+}
+
 model Book {
-  id          BigInt      @id @unique @default(autoincrement())
-  title       String      @db.VarChar(255)
-  author      String      @db.VarChar(100)
-  publisher   String      @db.VarChar(150)
+  id          BigInt         @id @unique @default(autoincrement())
+  title       String         @db.VarChar(255)
+  author      String         @db.VarChar(100)
+  publisher   String         @db.VarChar(150)
   price       BigInt
-  description String?     @db.Text
-  status      BookStatus  @default(NEW)
-  seller      User        @relation("UserBooks", fields: [sellerId], references: [id])
-  sellerId    BigInt      @map("seller_id")
-  createdAt   DateTime    @default(now()) @map("created_at")
+  description String?        @db.Text
+  status      BookStatus     @default(NEW)
+  saleStatus  BookSaleStatus @default(FOR_SALE) @map("sale_status")
+  seller      User           @relation("UserBooks", fields: [sellerId], references: [id])
+  sellerId    BigInt         @map("seller_id")
+  createdAt   DateTime       @default(now()) @map("created_at")
   orders      Order[]
   favorites   Favorite[]
   bookImage   BookImage[]
