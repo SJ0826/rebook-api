@@ -29,7 +29,7 @@ export class CreateBookDto {
   price: number;
 
   @ApiProperty({ example: 'NEW' })
-  @IsNumber()
+  @IsString()
   status: BookStatus;
 
   @ApiProperty({ example: '해리 포터와 마법사의 돌 설명' })
