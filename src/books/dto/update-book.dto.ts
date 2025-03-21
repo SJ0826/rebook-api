@@ -1,5 +1,6 @@
 import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { BookStatus } from '@prisma/client';
 
 export class UpdateBookDto {
   @ApiProperty({ example: '해리 포터와 마법사의 돌 수정' })
@@ -30,6 +31,10 @@ export class UpdateBookDto {
   @IsOptional()
   @IsNumber()
   price?: number;
+
+  @ApiProperty({ example: 'NEW' })
+  @IsString()
+  status: BookStatus;
 
   @ApiProperty({ example: '해리 포터와 마법사의 돌 설명' })
   @IsOptional()

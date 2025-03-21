@@ -23,6 +23,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optiona-jwt-guard';
 
 @Controller('books')
 @ApiTags('책')
@@ -123,6 +124,7 @@ export class BooksController {
 
   // 책 상세 조회
   @Get(':id')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: '책 상세 조회',
     description:
@@ -137,7 +139,9 @@ export class BooksController {
     status: 404,
     description: '책을 찾을 수 없음',
   })
-  getBookDetail(@Param('id') id: bigint) {
-    return this.booksService.getBookDetail(id);
+  getBookDetail(@Param('id') id: bigint, @Req() req) {
+    console.log(req.user);
+    const userId = req.user?.id;
+    return this.booksService.getBookDetail(id, userId);
   }
 }
