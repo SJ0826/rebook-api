@@ -9,6 +9,7 @@ import { ChatService } from './chat/chat.service';
 import { ChatModule } from './chat/chat.module';
 import { FileModule } from './file/file.module';
 import { ConfigModule } from '@nestjs/config';
+import { MyModule } from './my/my.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ConfigModule } from '@nestjs/config';
     OrdersModule,
     ChatModule,
     FileModule,
+    MyModule,
   ],
   providers: [ChatGateway, ChatService],
 })
