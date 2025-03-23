@@ -12,11 +12,13 @@ import { Type } from 'class-transformer';
 export class GetSellingBooksQueryDto {
   @ApiPropertyOptional({ description: '최소 금액', example: 8000 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   minPrice?: number;
 
   @ApiPropertyOptional({ description: '최대 금액', example: 10000 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   maxPrice?: number;
 
