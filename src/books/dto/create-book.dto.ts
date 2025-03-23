@@ -1,5 +1,6 @@
 import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { BookStatus } from '@prisma/client';
 
 export class CreateBookDto {
   @ApiProperty({ example: '해리 포터와 마법사의 돌' })
@@ -26,6 +27,10 @@ export class CreateBookDto {
   @ApiProperty({ example: 15000 })
   @IsNumber()
   price: number;
+
+  @ApiProperty({ example: 'NEW' })
+  @IsString()
+  status: BookStatus;
 
   @ApiProperty({ example: '해리 포터와 마법사의 돌 설명' })
   @IsOptional()

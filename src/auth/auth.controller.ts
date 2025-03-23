@@ -1,4 +1,12 @@
-import { Body, Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -10,6 +18,7 @@ import { AuthService } from './auth.service';
 import { UserRegisterDto } from './dto/user-register.dto';
 import { UserLoginDto } from './dto/user-login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { UserProfileOutDto } from './dto/user-profile.dto';
 
 @Controller('auth')
 @ApiTags('인증')
@@ -67,5 +76,17 @@ export class AuthController {
   @ApiBearerAuth()
   async logout(@Res({ passthrough: true }) response: Response, @Req() req) {
     return this.authService.logout(response, req.user.id);
+  }
+
+  @Get('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: '내 정보 조회',
+    description: '현재 로그인한 사용자의 정보를 조회합니다.',
+  })
+  @ApiResponse({ status: 200, description: '성공' })
+  @ApiBearerAuth()
+  async getProfile(@Req() req): Promise<UserProfileOutDto> {
+    return this.authService.getUserProfile(req.user.id);
   }
 }

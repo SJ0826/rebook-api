@@ -77,7 +77,7 @@ export class FileService {
 
         return {
           uuid,
-          imageUrls: imageFileUrl,
+          imageUrl: imageFileUrl,
         };
       }),
     );
