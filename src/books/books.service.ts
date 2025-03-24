@@ -7,7 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
-import { BookStatus } from '@prisma/client';
+import { BookSaleStatus, BookStatus } from '@prisma/client';
 
 @Injectable()
 export class BooksService {
@@ -215,6 +215,7 @@ export class BooksService {
             filters?.minPrice ? { price: { gte: filters.minPrice } } : {},
             filters?.maxPrice ? { price: { lte: filters.maxPrice } } : {},
             filters?.status ? { status: filters.status } : {},
+            { saleStatus: BookSaleStatus.FOR_SALE },
           ],
         },
         orderBy: orderBy,
@@ -222,6 +223,8 @@ export class BooksService {
         skip: skip,
         include: {
           bookImage: { select: { imageUrl: true, sort: true } },
+          favorites: true,
+          orders: true,
         },
       }),
       this.prisma.book.count({
@@ -238,6 +241,7 @@ export class BooksService {
             filters?.minPrice ? { price: { gte: filters.minPrice } } : {},
             filters?.maxPrice ? { price: { lte: filters.maxPrice } } : {},
             filters?.status ? { status: filters.status } : {},
+            { saleStatus: BookSaleStatus.FOR_SALE },
           ],
         },
       }),
@@ -247,9 +251,11 @@ export class BooksService {
       totalCount,
       totalPages: Math.ceil(totalCount / limit),
       currentPage: page,
-      books: books.map(({ bookImage, ...book }) => ({
+      books: books.map(({ bookImage, favorites, orders, ...book }) => ({
         ...book,
         imageUrls: bookImage.find((image) => image.sort === 0)?.imageUrl,
+        favoriteCount: favorites.length,
+        orderCount: orders.length,
       })),
     };
   }
