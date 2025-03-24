@@ -267,6 +267,8 @@ export class BooksService {
         bookImage: {
           select: { imageUrl: true, uuid: true },
         },
+        favorites: true,
+        orders: true,
       },
     });
 
@@ -276,7 +278,6 @@ export class BooksService {
 
     // 좋아요 여부 확인
     let isFavorite = false;
-    this.logger.debug(userId);
     if (userId) {
       const favorite = await this.prisma.favorite.findFirst({
         where: {
@@ -288,29 +289,27 @@ export class BooksService {
     }
 
     return {
-      success: true,
-      message: '성공',
-      data: {
-        id: book.id,
-        title: book.title,
-        author: book.author,
-        publisher: book.publisher,
-        price: book.price,
-        description: book.description,
-        status: book.status,
-        createdAt: book.createdAt,
-        seller: {
-          id: book.seller.id,
-          name: book.seller.name,
-        },
-        bookImages: book.bookImage.map((img) => {
-          return {
-            imageUrl: img.imageUrl,
-            uuid: img.uuid,
-          };
-        }),
-        isFavorite: isFavorite, // 여기 추가
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      publisher: book.publisher,
+      price: book.price,
+      description: book.description,
+      status: book.status,
+      createdAt: book.createdAt,
+      seller: {
+        id: book.seller.id,
+        name: book.seller.name,
       },
+      bookImages: book.bookImage.map((img) => {
+        return {
+          imageUrl: img.imageUrl,
+          uuid: img.uuid,
+        };
+      }),
+      isFavorite: isFavorite,
+      favoriteCount: book.favorites.length,
+      orderCount: book.orders.length,
     };
   }
 }
