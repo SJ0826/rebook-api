@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { BookSaleStatus, BookStatus } from '@prisma/client';
+import { UpdateBookSaleStatusDtoOut } from './dto/update-book-sale-status.dto';
 
 @Injectable()
 export class BooksService {
@@ -80,7 +81,7 @@ export class BooksService {
   /**
    * 책 수정 (Update)
    */
-  async update(id: number, updateBookDto: UpdateBookDto) {
+  async updateBook(id: bigint, updateBookDto: UpdateBookDto) {
     return this.prisma.$transaction(async (tx) => {
       // 1. 기존 책 조회
       const existingBook = await tx.book.findUnique({
@@ -144,6 +145,30 @@ export class BooksService {
         }),
       };
     });
+  }
+
+  /**
+   * 책 판매 상태 수정
+   */
+  async updateBookSaleStatus(
+    id: bigint,
+    updateBookSaleStatusDtoOut: UpdateBookSaleStatusDtoOut,
+  ) {
+    const { saleStatus } = updateBookSaleStatusDtoOut;
+    const existingBook = await this.prisma.book.findUnique({
+      where: { id },
+    });
+
+    if (!existingBook) {
+      throw new NotFoundException('해당 책을 찾을 수 없습니다.');
+    }
+
+    await this.prisma.book.update({
+      where: { id },
+      data: { saleStatus },
+    });
+
+    return;
   }
 
   /**
@@ -300,9 +325,9 @@ export class BooksService {
       author: book.author,
       publisher: book.publisher,
       price: book.price,
+      saleStatus: book.saleStatus,
       description: book.description,
       status: book.status,
-      createdAt: book.createdAt,
       seller: {
         id: book.seller.id,
         name: book.seller.name,
@@ -316,6 +341,7 @@ export class BooksService {
       isFavorite: isFavorite,
       favoriteCount: book.favorites.length,
       orderCount: book.orders.length,
+      createdAt: book.createdAt,
     };
   }
 }

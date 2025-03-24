@@ -24,6 +24,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/optiona-jwt-guard';
+import { UpdateBookSaleStatusDtoOut } from './dto/update-book-sale-status.dto';
 
 @Controller('books')
 @ApiTags('책')
@@ -58,7 +59,24 @@ export class BooksController {
       '<li>sort의 값이 0인 이미지가 대표사진으로 등록됩니다.</li>',
   })
   updateBook(@Param('id') id: string, @Body() updateBookDto: UpdateBookDto) {
-    return this.booksService.update(Number(id), updateBookDto);
+    return this.booksService.updateBook(BigInt(id), updateBookDto);
+  }
+
+  // 책 판매 상태 수정
+  @Patch('/:id/sale-status')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: '책 판매 상태 수정',
+    description: '책의 판매 상태를 수정합니다.',
+  })
+  updateBookSaleStatus(
+    @Param('id') id: string,
+    @Body() updateBookSaleStateDtoOut: UpdateBookSaleStatusDtoOut,
+  ) {
+    return this.booksService.updateBookSaleStatus(
+      BigInt(id),
+      updateBookSaleStateDtoOut,
+    );
   }
 
   // 책 삭제
