@@ -6,12 +6,15 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { v4 as uuidv4 } from 'uuid';
+import { addMinutes, isAfter } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRegisterDto } from './dto/user-register.dto';
 import { UserLoginDto } from './dto/user-login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { CookieOptions, Response } from 'express';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +24,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly mailService: MailService,
   ) {}
 
   /**
@@ -29,6 +33,8 @@ export class AuthService {
   async register(dto: UserRegisterDto, response: Response) {
     return this.prisma.$transaction(async (tx) => {
       const { email, password, name } = dto;
+      const token = uuidv4();
+      const expiry = addMinutes(new Date(), 15);
 
       // 이메일 중복 체크
       const existingUser = await tx.user.findUnique({
@@ -47,33 +53,77 @@ export class AuthService {
           email,
           password: hashedPassword,
           name,
+          emailToken: token,
+          emailTokenExpiry: expiry,
         },
       });
 
+      await this.mailService.sendVerificationEmail(email, token);
       // Access Token & Refresh Token 생성
-      const accessToken = this.jwtService.sign(
-        { userId: user.id },
-        { secret: this.config.get<string>('JWT_SECRET'), expiresIn: '15m' },
-      );
-      const refreshToken = this.jwtService.sign(
-        { userId: user.id },
-        { secret: this.config.get<string>('JWT_SECRET'), expiresIn: '7d' },
-      );
+      // const accessToken = this.jwtService.sign(
+      //   { userId: d.id },
+      //   { secret: this.config.get<string>('JWT_SECRET'), expiresIn: '15m' },
+      // );
+      // const refreshToken = this.jwtService.sign(
+      //   { userId: user.id },
+      //   { secret: this.config.get<string>('JWT_SECRET'), expiresIn: '7d' },
+      // );
 
       // Refresh Token을 해싱 후 저장
-      const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
-      await tx.user.update({
-        where: { id: user.id },
-        data: { refreshToken: hashedRefreshToken },
-      });
+      // const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+      // await tx.user.update({
+      //   where: { id: user.id },
+      //   data: { refreshToken: hashedRefreshToken },
+      // });
 
       // Set refresh token as HTTP-only cookie
-      response.cookie('refreshToken', refreshToken, this.setCookieOptions());
+      // response.cookie('refreshToken', refreshToken, this.setCookieOptions());
 
       return {
-        accessToken,
+        // accessToken,
       };
     });
+  }
+
+  /**
+   * 이메일 인증
+   */
+  async verifyEmail(token: string, response: Response) {
+    const user = await this.prisma.user.findFirst({
+      where: { emailToken: token },
+    });
+
+    if (!user) throw new BadRequestException('유효하지 않은 토큰입니다.');
+
+    if (!user.emailTokenExpiry || isAfter(new Date(), user.emailTokenExpiry)) {
+      throw new BadRequestException('토큰이 만료되었습니다.');
+    }
+
+    const accessToken = this.jwtService.sign(
+      { userId: user.id },
+      { secret: this.config.get('JWT_SECRET'), expiresIn: '15m' },
+    );
+
+    const refreshToken = this.jwtService.sign(
+      { userId: user.id },
+      { secret: this.config.get('JWT_SECRET'), expiresIn: '7d' },
+    );
+
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        refreshToken: hashedRefreshToken,
+        emailVerified: true,
+        emailToken: null,
+        emailTokenExpiry: null,
+      },
+    });
+
+    response.cookie('refreshToken', refreshToken, this.setCookieOptions());
+
+    return { accessToken };
   }
 
   /**

@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Post,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -36,6 +37,21 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ) {
     return this.authService.register(userRegisterDto, response);
+  }
+
+  // TODO: 이메일 인증 요청 API 구현
+
+  @Get('verify-email')
+  @ApiOperation({
+    summary: '이메일 인증',
+    description: '이메일 인증 코드의 유효성을 검증합니다.',
+  })
+  @ApiResponse({ status: 200, description: '이메일 인증 성공' })
+  async verifyEmail(
+    @Query('token') token: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    return this.authService.verifyEmail(token, response);
   }
 
   @Post('login')

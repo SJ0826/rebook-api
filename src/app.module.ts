@@ -10,6 +10,7 @@ import { ChatModule } from './chat/chat.module';
 import { FileModule } from './file/file.module';
 import { ConfigModule } from '@nestjs/config';
 import { MyModule } from './my/my.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { MyModule } from './my/my.module';
     ChatModule,
     FileModule,
     MyModule,
+    MailModule,
   ],
   providers: [ChatGateway, ChatService],
 })
