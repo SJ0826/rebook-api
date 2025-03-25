@@ -7,7 +7,8 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
-import { BookStatus } from '@prisma/client';
+import { BookSaleStatus, BookStatus } from '@prisma/client';
+import { UpdateBookSaleStatusDtoOut } from './dto/update-book-sale-status.dto';
 
 @Injectable()
 export class BooksService {
@@ -80,7 +81,7 @@ export class BooksService {
   /**
    * 책 수정 (Update)
    */
-  async update(id: number, updateBookDto: UpdateBookDto) {
+  async updateBook(id: bigint, updateBookDto: UpdateBookDto) {
     return this.prisma.$transaction(async (tx) => {
       // 1. 기존 책 조회
       const existingBook = await tx.book.findUnique({
@@ -144,6 +145,30 @@ export class BooksService {
         }),
       };
     });
+  }
+
+  /**
+   * 책 판매 상태 수정
+   */
+  async updateBookSaleStatus(
+    id: bigint,
+    updateBookSaleStatusDtoOut: UpdateBookSaleStatusDtoOut,
+  ) {
+    const { saleStatus } = updateBookSaleStatusDtoOut;
+    const existingBook = await this.prisma.book.findUnique({
+      where: { id },
+    });
+
+    if (!existingBook) {
+      throw new NotFoundException('해당 책을 찾을 수 없습니다.');
+    }
+
+    await this.prisma.book.update({
+      where: { id },
+      data: { saleStatus },
+    });
+
+    return;
   }
 
   /**
@@ -215,6 +240,7 @@ export class BooksService {
             filters?.minPrice ? { price: { gte: filters.minPrice } } : {},
             filters?.maxPrice ? { price: { lte: filters.maxPrice } } : {},
             filters?.status ? { status: filters.status } : {},
+            { saleStatus: BookSaleStatus.FOR_SALE },
           ],
         },
         orderBy: orderBy,
@@ -222,6 +248,8 @@ export class BooksService {
         skip: skip,
         include: {
           bookImage: { select: { imageUrl: true, sort: true } },
+          favorites: true,
+          orders: true,
         },
       }),
       this.prisma.book.count({
@@ -238,6 +266,7 @@ export class BooksService {
             filters?.minPrice ? { price: { gte: filters.minPrice } } : {},
             filters?.maxPrice ? { price: { lte: filters.maxPrice } } : {},
             filters?.status ? { status: filters.status } : {},
+            { saleStatus: BookSaleStatus.FOR_SALE },
           ],
         },
       }),
@@ -247,9 +276,11 @@ export class BooksService {
       totalCount,
       totalPages: Math.ceil(totalCount / limit),
       currentPage: page,
-      books: books.map(({ bookImage, ...book }) => ({
+      books: books.map(({ bookImage, favorites, orders, ...book }) => ({
         ...book,
         imageUrls: bookImage.find((image) => image.sort === 0)?.imageUrl,
+        favoriteCount: favorites.length,
+        orderCount: orders.length,
       })),
     };
   }
@@ -267,6 +298,8 @@ export class BooksService {
         bookImage: {
           select: { imageUrl: true, uuid: true },
         },
+        favorites: true,
+        orders: true,
       },
     });
 
@@ -276,7 +309,6 @@ export class BooksService {
 
     // 좋아요 여부 확인
     let isFavorite = false;
-    this.logger.debug(userId);
     if (userId) {
       const favorite = await this.prisma.favorite.findFirst({
         where: {
@@ -288,29 +320,28 @@ export class BooksService {
     }
 
     return {
-      success: true,
-      message: '성공',
-      data: {
-        id: book.id,
-        title: book.title,
-        author: book.author,
-        publisher: book.publisher,
-        price: book.price,
-        description: book.description,
-        status: book.status,
-        createdAt: book.createdAt,
-        seller: {
-          id: book.seller.id,
-          name: book.seller.name,
-        },
-        bookImages: book.bookImage.map((img) => {
-          return {
-            imageUrl: img.imageUrl,
-            uuid: img.uuid,
-          };
-        }),
-        isFavorite: isFavorite, // 여기 추가
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      publisher: book.publisher,
+      price: book.price,
+      saleStatus: book.saleStatus,
+      description: book.description,
+      status: book.status,
+      seller: {
+        id: book.seller.id,
+        name: book.seller.name,
       },
+      bookImages: book.bookImage.map((img) => {
+        return {
+          imageUrl: img.imageUrl,
+          uuid: img.uuid,
+        };
+      }),
+      isFavorite: isFavorite,
+      favoriteCount: book.favorites.length,
+      orderCount: book.orders.length,
+      createdAt: book.createdAt,
     };
   }
 }

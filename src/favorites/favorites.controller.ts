@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Delete,
-  Get,
   Param,
   Post,
   Req,
@@ -34,15 +33,6 @@ export class FavoritesController {
   })
   createFavorite(@Req() req, @Body() createFavoriteDto: CreateFavoriteDto) {
     return this.favoritesService.create(req.user.id, createFavoriteDto);
-  }
-
-  @Get()
-  @ApiOperation({
-    summary: '찜한 책 목록 조회',
-    description: '사용자가 찜한 모든 책을 조회합니다.',
-  })
-  findAll(@Req() req) {
-    return this.favoritesService.findAll(req.user.id);
   }
 
   @Delete(':bookId')
