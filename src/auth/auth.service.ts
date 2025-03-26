@@ -5,13 +5,19 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
-import { PrismaService } from '../prisma/prisma.service';
-import { UserRegisterDto } from './dto/user-register.dto';
-import { UserLoginDto } from './dto/user-login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcrypt';
 import { CookieOptions, Response } from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import { addMinutes, isAfter } from 'date-fns';
+import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
+import { UserRegisterDto } from './dto/user-register.dto';
+import { UserLoginDto } from './dto/user-login.dto';
+import { ResendVerificationEmailOutDto } from './dto/email.dto';
+
+const TOKEN_EXPIRY_MINUTES = 15;
 
 @Injectable()
 export class AuthService {
@@ -21,59 +27,97 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly mailService: MailService,
   ) {}
 
   /**
    * 회원가입
    */
   async register(dto: UserRegisterDto, response: Response) {
-    return this.prisma.$transaction(async (tx) => {
-      const { email, password, name } = dto;
+    const { email, password, name } = dto;
 
-      // 이메일 중복 체크
-      const existingUser = await tx.user.findUnique({
-        where: { email },
-      });
-      if (existingUser) {
-        throw new BadRequestException('이미 사용중인 이메일입니다.');
-      }
-
-      // 비밀번호 해싱
-      const hashedPassword: string = await bcrypt.hash(password, 10);
-
-      // 사용자 생성
-      const user = await tx.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          name,
-        },
-      });
-
-      // Access Token & Refresh Token 생성
-      const accessToken = this.jwtService.sign(
-        { userId: user.id },
-        { secret: this.config.get<string>('JWT_SECRET'), expiresIn: '15m' },
-      );
-      const refreshToken = this.jwtService.sign(
-        { userId: user.id },
-        { secret: this.config.get<string>('JWT_SECRET'), expiresIn: '7d' },
-      );
-
-      // Refresh Token을 해싱 후 저장
-      const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
-      await tx.user.update({
-        where: { id: user.id },
-        data: { refreshToken: hashedRefreshToken },
-      });
-
-      // Set refresh token as HTTP-only cookie
-      response.cookie('refreshToken', refreshToken, this.setCookieOptions());
-
-      return {
-        accessToken,
-      };
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
     });
+    if (existingUser) {
+      throw new BadRequestException('이미 사용중인 이메일입니다.');
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const { token, expiry } = this.generateEmailVerificationToken();
+
+    await this.prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+        emailToken: token,
+        emailTokenExpiry: expiry,
+      },
+    });
+
+    await this.mailService.sendVerificationEmail(email, token);
+    return {};
+  }
+
+  /**
+   * 이메일 인증 코드 재전송
+   */
+  async resendVerificationEmail({ email }: ResendVerificationEmailOutDto) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new NotFoundException('해당 이메일의 사용자를 찾을 수 없습니다.');
+    }
+
+    if (user.emailVerified) {
+      throw new BadRequestException('이미 인증이 완료된 이메일입니다.');
+    }
+
+    const { token, expiry } = this.generateEmailVerificationToken();
+
+    await this.prisma.user.update({
+      where: { email },
+      data: {
+        emailToken: token,
+        emailTokenExpiry: expiry,
+      },
+    });
+
+    await this.mailService.sendVerificationEmail(email, token);
+    return { message: '인증 이메일을 다시 전송했습니다.' };
+  }
+
+  /**
+   * 이메일 인증
+   */
+  async verifyEmail(token: string, response: Response) {
+    const user = await this.prisma.user.findFirst({
+      where: { emailToken: token },
+    });
+
+    if (
+      !user ||
+      !user.emailTokenExpiry ||
+      isAfter(new Date(), user.emailTokenExpiry)
+    ) {
+      throw new BadRequestException('유효하지 않거나 만료된 토큰입니다.');
+    }
+
+    const { accessToken, refreshToken } = this.generateTokens(user.id);
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        refreshToken: hashedRefreshToken,
+        emailVerified: true,
+        emailToken: null,
+        emailTokenExpiry: null,
+      },
+    });
+
+    response.cookie('refreshToken', refreshToken, this.setCookieOptions());
+    return { accessToken };
   }
 
   /**
@@ -82,44 +126,34 @@ export class AuthService {
   async login(dto: UserLoginDto, response: Response) {
     const { email, password } = dto;
 
-    // 이메일 확인
+    // 이메일, 비밀번호 검증
     const user = await this.prisma.user.findUnique({ where: { email } });
-
-    if (!user) {
-      throw new BadRequestException('이메일 또는 비밀번호가 잘못되었습니다');
-    }
-
-    // 비밀번호 검증
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new BadRequestException('이메일 또는 비밀번호가 잘못되었습니다');
     }
 
     // JWT 발급
     const { accessToken, refreshToken } = this.generateTokens(user.id);
-
-    // Refresh Token을 해싱 후 저장
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+
     await this.prisma.user.update({
       where: { id: user.id },
       data: { refreshToken: hashedRefreshToken },
     });
 
-    // Set refresh token as HTTP-only cookie
+    // 쿠키에 리프레시토큰 저장
     response.cookie('refreshToken', refreshToken, this.setCookieOptions());
-
     return {
       accessToken,
     };
   }
 
   /**
-   * AccessToken과 RefreshToken을 새로 갱신합니다.
+   * 엑세스 토큰과 리프레시 토큰을 새로 갱신합니다.
    */
   async refreshToken(refreshToken: string, response: Response) {
-    let payload;
-
     // 1. RefreshToken에서 userId 추출
+    let payload;
     try {
       payload = this.jwtService.verify(refreshToken, {
         secret: process.env.JWT_SECRET || 'JWT_SECRET',
@@ -132,41 +166,27 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.userId },
     });
-
-    if (!user || !user.refreshToken) {
-      throw new UnauthorizedException('인증 정보가 없습니다');
-    }
-
-    // 3. Refresh Token 검증
-    const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
-    if (!isMatch) {
+    if (
+      !user ||
+      !user.refreshToken ||
+      !(await bcrypt.compare(refreshToken, user.refreshToken))
+    ) {
       throw new UnauthorizedException('유효하지 않은 토큰입니다.');
     }
 
-    // 4. 새 accessToken 발급
-    const accessToken = this.jwtService.sign(
-      { userId: user.id },
-      { expiresIn: '15m', secret: process.env.JWT_SECRET },
+    // 4. 새 토큰 발급
+    const { accessToken, refreshToken: newRefreshToken } = this.generateTokens(
+      user.id,
     );
 
-    // 5. 새 refreshToken 발급
-    const newRefreshToken = this.jwtService.sign(
-      {
-        userId: user.id,
-      },
-      { expiresIn: '7d', secret: process.env.JWT_SECRET },
-    );
-
-    // 6. 새 refreshToken 해싱 후 DB 업데이트 (이전 토큰 무효화)
+    // 5. 새 refreshToken 해싱 후 DB 업데이트 (이전 토큰 무효화)
     const hashedNewRefreshToken = await bcrypt.hash(newRefreshToken, 10);
     await this.prisma.user.update({
       where: { id: user.id },
       data: { refreshToken: hashedNewRefreshToken },
     });
 
-    // 7. Set refresh token as HTTP-only cookie
-    response.cookie('refreshToken', newRefreshToken, this.setCookieOptions());
-
+    // 6. 쿠키에 리프레시토큰 저장    response.cookie('refreshToken', newRefreshToken, this.setCookieOptions());
     return { accessToken };
   }
 
@@ -174,20 +194,14 @@ export class AuthService {
    * 로그아웃
    */
   async logout(response: Response, userId: bigint) {
-    try {
-      const cookieOptions = this.setCookieOptions();
-      response.clearCookie('refreshToken', cookieOptions);
+    response.clearCookie('refreshToken', this.setCookieOptions());
 
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { refreshToken: null },
-      });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: null },
+    });
 
-      return { message: '로그아웃 성공' };
-    } catch (error) {
-      this.logger.error('로그아웃 실패:', error);
-      throw error;
-    }
+    return { message: '로그아웃 성공' };
   }
 
   /**
@@ -211,9 +225,7 @@ export class AuthService {
     return user;
   }
 
-  /**
-   * 쿠키 설정
-   */
+  // 쿠키 설정
   private setCookieOptions(): CookieOptions {
     return {
       httpOnly: true,
@@ -224,9 +236,7 @@ export class AuthService {
     };
   }
 
-  /**
-   * JWT 토큰 생성
-   */
+  // JWT 토큰 생성
   private generateTokens(userId: bigint) {
     const jwtSecret = this.config.get<string>('JWT_SECRET');
 
@@ -241,5 +251,12 @@ export class AuthService {
     );
 
     return { accessToken, refreshToken };
+  }
+
+  // 이메일 인증 토큰 생성
+  private generateEmailVerificationToken() {
+    const token = uuidv4();
+    const expiry = addMinutes(new Date(), TOKEN_EXPIRY_MINUTES);
+    return { token, expiry };
   }
 }

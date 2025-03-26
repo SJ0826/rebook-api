@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Post,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -19,6 +20,7 @@ import { UserRegisterDto } from './dto/user-register.dto';
 import { UserLoginDto } from './dto/user-login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { UserProfileOutDto } from './dto/user-profile.dto';
+import { ResendVerificationEmailOutDto } from './dto/email.dto';
 
 @Controller('auth')
 @ApiTags('인증')
@@ -36,6 +38,33 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ) {
     return this.authService.register(userRegisterDto, response);
+  }
+
+  @Post('email/resend')
+  @ApiOperation({
+    summary: '인증 메일 재전송',
+    description: '사용자의 이메일로 인증 메일을 재전송합니다.',
+  })
+  @ApiResponse({ status: 200, description: '이메일 전송 성공' })
+  async resendVerificationEmail(
+    @Body() resendVerificationEmailOutDto: ResendVerificationEmailOutDto,
+  ) {
+    return this.authService.resendVerificationEmail(
+      resendVerificationEmailOutDto,
+    );
+  }
+
+  @Get('email/verify')
+  @ApiOperation({
+    summary: '이메일 인증',
+    description: '이메일 인증 코드의 유효성을 검증합니다.',
+  })
+  @ApiResponse({ status: 200, description: '이메일 인증 성공' })
+  async verifyEmail(
+    @Query('token') token: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    return this.authService.verifyEmail(token, response);
   }
 
   @Post('login')
