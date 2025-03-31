@@ -10,6 +10,9 @@ export class UserProfileOutDto {
   @ApiProperty({ example: '홍길동', description: '이름' })
   name: string;
 
+  @ApiProperty({ example: 'http://image-url', description: '프로필 이미지' })
+  imageUrl: string | null;
+
   @ApiProperty({ example: '2025-03-19T05:22:25.065Z', description: '가입일' })
   createdAt: Date;
 }

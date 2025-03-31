@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -16,6 +17,8 @@ import { MailService } from '../mail/mail.service';
 import { UserRegisterDto } from './dto/user-register.dto';
 import { UserLoginDto } from './dto/user-login.dto';
 import { ResendVerificationEmailOutDto } from './dto/email.dto';
+import { generateProfileImage } from '../common/util/generate-profile-image';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 const TOKEN_EXPIRY_MINUTES = 15;
 
@@ -28,6 +31,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly mailService: MailService,
+    @Inject('S3_CLIENT') private readonly s3: S3Client,
   ) {}
 
   /**
@@ -36,6 +40,7 @@ export class AuthService {
   async register(dto: UserRegisterDto, response: Response) {
     const { email, password, name } = dto;
 
+    // 중복 이메일 체크
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -43,9 +48,30 @@ export class AuthService {
       throw new BadRequestException('이미 사용중인 이메일입니다.');
     }
 
+    // 비밀번호 해시 & 이메일 인증 토큰 생성
     const hashedPassword = await bcrypt.hash(password, 10);
     const { token, expiry } = this.generateEmailVerificationToken();
 
+    // 기본 프로필 이미지 생성 및 업로드
+    const uuid = uuidv4();
+    const s3Key = `upload/user/${uuid}`;
+    const imageBuffer = await generateProfileImage(name);
+
+    const bucket = process.env.AWS_S3_BUCKET_NAME;
+    const cloudFrontDomain = process.env.AWS_CLOUDFRONT_DOMAIN;
+
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: s3Key,
+        Body: imageBuffer,
+        ContentType: 'image/png',
+      }),
+    );
+
+    const imageUrl = `https://${cloudFrontDomain}/${s3Key}`;
+
+    // DB에 사용자 생성
     await this.prisma.user.create({
       data: {
         email,
@@ -53,10 +79,13 @@ export class AuthService {
         name,
         emailToken: token,
         emailTokenExpiry: expiry,
+        imageUrl,
       },
     });
 
+    // 인증 이메일 전송
     await this.mailService.sendVerificationEmail(email, token);
+
     return {};
   }
 
@@ -149,16 +178,17 @@ export class AuthService {
   }
 
   /**
-   * 엑세스 토큰과 리프레시 토큰을 새로 갱신합니다.
+   * 엑세스 토큰과 리프레시 토큰 새로 갱신
    */
   async refreshToken(refreshToken: string, response: Response) {
     // 1. RefreshToken에서 userId 추출
-    let payload;
+    let payload: { userId: bigint };
     try {
       payload = this.jwtService.verify(refreshToken, {
         secret: process.env.JWT_SECRET || 'JWT_SECRET',
       });
     } catch {
+      response.clearCookie('refreshToken', this.setCookieOptions());
       throw new BadRequestException('유효하지 않은 토큰 형식입니다');
     }
 
@@ -186,7 +216,8 @@ export class AuthService {
       data: { refreshToken: hashedNewRefreshToken },
     });
 
-    // 6. 쿠키에 리프레시토큰 저장    response.cookie('refreshToken', newRefreshToken, this.setCookieOptions());
+    // 6. 쿠키에 리프레시토큰 저장
+    response.cookie('refreshToken', newRefreshToken, this.setCookieOptions());
     return { accessToken };
   }
 
@@ -202,27 +233,6 @@ export class AuthService {
     });
 
     return { message: '로그아웃 성공' };
-  }
-
-  /**
-   * 유저 프로필 조회
-   */
-  async getUserProfile(userId: number) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        createdAt: true,
-      },
-    });
-
-    if (!user) {
-      throw new NotFoundException('사용자를 찾을 수 없습니다.');
-    }
-
-    return user;
   }
 
   // 쿠키 설정

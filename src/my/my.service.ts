@@ -18,6 +18,7 @@ export class MyService {
         id: true,
         email: true,
         name: true,
+        imageUrl: true,
         createdAt: true,
       },
     });
