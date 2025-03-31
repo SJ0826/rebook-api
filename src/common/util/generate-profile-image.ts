@@ -22,14 +22,14 @@ export async function generateProfileImage(nickname: string): Promise<Buffer> {
   const backgroundColor = getRandomColor();
 
   const svg = `
-    <svg width="128" height="128" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="64" cy="64" r="64" fill="${backgroundColor}"/>
-      <text x="50%" y="68%" font-size="64" font-family="sans-serif"
-        fill="#fff" text-anchor="middle" dominant-baseline="middle">
-        ${firstChar}
-      </text>
-    </svg>
-  `;
+  <svg width="256" height="256" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="128" cy="128" r="128" fill="${backgroundColor}"/>
+    <text x="50%" y="68%" font-size="128" font-family="sans-serif"
+      fill="#fff" text-anchor="middle" dominant-baseline="middle">
+      ${firstChar}
+    </text>
+  </svg>
+`;
 
   // SVG → PNG 변환
   return sharp(Buffer.from(svg)).png().toBuffer();
