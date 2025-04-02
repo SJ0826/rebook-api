@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Patch,
   Post,
   Query,
   Req,
@@ -20,6 +21,7 @@ import { UserRegisterDto } from './dto/user-register.dto';
 import { UserLoginDto } from './dto/user-login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { ResendVerificationEmailOutDto } from './dto/email.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('auth')
 @ApiTags('인증')
@@ -104,5 +106,11 @@ export class AuthController {
   @ApiBearerAuth()
   async logout(@Res({ passthrough: true }) response: Response, @Req() req) {
     return this.authService.logout(response, req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('change-password')
+  async changePassword(@Req() req, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(req.user.id, dto);
   }
 }

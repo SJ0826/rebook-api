@@ -19,6 +19,7 @@ import { UserLoginDto } from './dto/user-login.dto';
 import { ResendVerificationEmailOutDto } from './dto/email.dto';
 import { generateProfileImage } from '../common/util/generate-profile-image';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 const TOKEN_EXPIRY_MINUTES = 15;
 
@@ -233,6 +234,34 @@ export class AuthService {
     });
 
     return { message: '로그아웃 성공' };
+  }
+
+  /**
+   * 비밀번호 변경
+   */
+  async changePassword(userId: number, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) {
+      throw new NotFoundException('해당 이메일의 사용자를 찾을 수 없습니다.');
+    }
+
+    const { currentPassword, newPassword } = dto;
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException('현재 비밀번호가 일치하지 않습니다.');
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashed },
+    });
+
+    return { message: '비밀번호가 성공적으로 변경되었습니다.' };
   }
 
   // 쿠키 설정
