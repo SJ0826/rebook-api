@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BookSaleStatus, BookStatus } from '@prisma/client';
+import { UserEditProfileInDto } from '../auth/dto/user-profile.dto';
 
 @Injectable()
 export class MyService {
@@ -9,7 +10,7 @@ export class MyService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * 유저 프로필 조회
+   * 내 프로필 조회
    */
   async getUserProfile(userId: number) {
     const user = await this.prisma.user.findUnique({
@@ -18,6 +19,7 @@ export class MyService {
         id: true,
         email: true,
         name: true,
+        imageUrl: true,
         createdAt: true,
       },
     });
@@ -27,6 +29,32 @@ export class MyService {
     }
 
     return user;
+  }
+
+  /** 내 정보 수정 */
+  async updateUserProfile(userId: number, dto: UserEditProfileInDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.name && { name: dto.name }),
+        ...(dto.imageUrl && { imageUrl: dto.imageUrl }),
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        imageUrl: true,
+        createdAt: true,
+      },
+    });
+
+    return updated;
   }
 
   /** 판매중인 책 목록 조회 */

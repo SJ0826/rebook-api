@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Patch,
   Post,
   Query,
   Req,
@@ -19,8 +21,8 @@ import { AuthService } from './auth.service';
 import { UserRegisterDto } from './dto/user-register.dto';
 import { UserLoginDto } from './dto/user-login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { UserProfileOutDto } from './dto/user-profile.dto';
 import { ResendVerificationEmailOutDto } from './dto/email.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('auth')
 @ApiTags('인증')
@@ -107,15 +109,24 @@ export class AuthController {
     return this.authService.logout(response, req.user.id);
   }
 
-  @Get('profile')
+  @Patch('change-password')
+  @UseGuards(JwtAuthGuard)
+  async changePassword(@Req() req, @Body() dto: ChangePasswordDto) {
+    return await this.authService.changePassword(req.user.id, dto);
+  }
+
+  @Delete('withdraw')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({
-    summary: '내 정보 조회',
-    description: '현재 로그인한 사용자의 정보를 조회합니다.',
+    summary: '회원 탈퇴',
+    description: '사용자가 회원 탈퇴를 진행합니다.',
   })
-  @ApiResponse({ status: 200, description: '성공' })
+  @ApiResponse({
+    status: 200,
+    description: '회원 탈퇴 성공',
+  })
   @ApiBearerAuth()
-  async getProfile(@Req() req): Promise<UserProfileOutDto> {
-    return this.authService.getUserProfile(req.user.id);
+  async withdraw(@Req() req, @Res({ passthrough: true }) response: Response) {
+    return this.authService.withdraw(req.user.id, response);
   }
 }

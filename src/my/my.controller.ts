@@ -1,4 +1,12 @@
-import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Patch,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -8,7 +16,10 @@ import {
 } from '@nestjs/swagger';
 import { MyService } from './my.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { UserProfileOutDto } from '../auth/dto/user-profile.dto';
+import {
+  UserEditProfileInDto,
+  UserProfileOutDto,
+} from '../auth/dto/user-profile.dto';
 import { BookStatus } from '@prisma/client';
 import { GetSellingBooksQueryDto } from './dto/get-selling-books.dto';
 
@@ -28,6 +39,26 @@ export class MyController {
   @ApiBearerAuth()
   async getProfile(@Req() req): Promise<UserProfileOutDto> {
     return this.myService.getUserProfile(req.user.id);
+  }
+
+  // 내 정보 수정
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: '내 정보 수정',
+    description: '이름 또는 프로필 이미지를 수정합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '수정 성공',
+    type: UserProfileOutDto,
+  })
+  @ApiBearerAuth()
+  async updateProfile(
+    @Req() req,
+    @Body() dto: UserEditProfileInDto,
+  ): Promise<UserProfileOutDto> {
+    return this.myService.updateUserProfile(req.user.id, dto);
   }
 
   // 내가 판매중인 책 목록 조회
