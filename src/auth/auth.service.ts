@@ -11,15 +11,15 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { CookieOptions, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { addMinutes, isAfter } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { UserRegisterDto } from './dto/user-register.dto';
 import { UserLoginDto } from './dto/user-login.dto';
 import { ResendVerificationEmailOutDto } from './dto/email.dto';
-import { generateProfileImage } from '../common/util/generate-profile-image';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { generateProfileImage } from '../common/util/generate-profile-image';
 
 const TOKEN_EXPIRY_MINUTES = 15;
 
@@ -35,16 +35,57 @@ export class AuthService {
     @Inject('S3_CLIENT') private readonly s3: S3Client,
   ) {}
 
-  /**
-   * 회원가입
-   */
+  // ---------------------
+  // 회원 가입
+  // ---------------------
   async register(dto: UserRegisterDto, response: Response) {
     const { email, password, name } = dto;
 
-    // 중복 이메일 체크
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
+
+    // 비활성화 유저 복구
+    if (existingUser && !existingUser.isActive) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const uuid = uuidv4();
+      const s3Key = `upload/user/${uuid}`;
+      const imageBuffer = await generateProfileImage(name);
+
+      const bucket = process.env.AWS_S3_BUCKET_NAME;
+      const cloudFrontDomain = process.env.AWS_CLOUDFRONT_DOMAIN;
+
+      await this.s3.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: s3Key,
+          Body: imageBuffer,
+          ContentType: 'image/png',
+        }),
+      );
+
+      const imageUrl = `https://${cloudFrontDomain}/${s3Key}`;
+      const { token, expiry } = this.generateEmailVerificationToken();
+
+      await this.prisma.user.update({
+        where: { email },
+        data: {
+          email: email,
+          emailTokenExpiry: expiry,
+          name,
+          password: hashedPassword,
+          isActive: true,
+          imageUrl: imageUrl,
+        },
+      });
+
+      await this.mailService.sendVerificationEmail(email, token);
+
+      return { message: '기존 탈퇴 계정을 복구했습니다' };
+    }
+
+    // 중복 이메일 체크
     if (existingUser) {
       throw new BadRequestException('이미 사용중인 이메일입니다.');
     }
@@ -90,9 +131,9 @@ export class AuthService {
     return {};
   }
 
-  /**
-   * 이메일 인증 코드 재전송
-   */
+  // --------------------------
+  // 이메일 인증 코드 재전송
+  // --------------------------
   async resendVerificationEmail({ email }: ResendVerificationEmailOutDto) {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
@@ -117,9 +158,9 @@ export class AuthService {
     return { message: '인증 이메일을 다시 전송했습니다.' };
   }
 
-  /**
-   * 이메일 인증
-   */
+  // ---------------------
+  // 이메일 인증
+  // ---------------------
   async verifyEmail(token: string, response: Response) {
     const user = await this.prisma.user.findFirst({
       where: { emailToken: token },
@@ -150,16 +191,21 @@ export class AuthService {
     return { accessToken };
   }
 
-  /**
-   * 로그인
-   */
+  // ---------------------
+  // 로그인
+  // ---------------------
   async login(dto: UserLoginDto, response: Response) {
     const { email, password } = dto;
+    const user = await this.prisma.user.findUnique({ where: { email } });
 
     // 이메일, 비밀번호 검증
-    const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new BadRequestException('이메일 또는 비밀번호가 잘못되었습니다');
+    }
+
+    // 회원 탈퇴 유무 확인
+    if (!user.isActive) {
+      throw new BadRequestException('해당 계정은 이미 탈퇴 처리되었습니다');
     }
 
     // JWT 발급
@@ -178,9 +224,9 @@ export class AuthService {
     };
   }
 
-  /**
-   * 엑세스 토큰과 리프레시 토큰 새로 갱신
-   */
+  // -----------------------------------------
+  // 엑세스 토큰과 리프레시 토큰 새로 갱신
+  // -----------------------------------------
   async refreshToken(refreshToken: string, response: Response) {
     // 1. RefreshToken에서 userId 추출
     let payload: { userId: bigint };
@@ -222,9 +268,9 @@ export class AuthService {
     return { accessToken };
   }
 
-  /**
-   * 로그아웃
-   */
+  // ---------------------
+  // 로그아웃
+  // ---------------------
   async logout(response: Response, userId: bigint) {
     response.clearCookie('refreshToken', this.setCookieOptions());
 
@@ -236,9 +282,9 @@ export class AuthService {
     return { message: '로그아웃 성공' };
   }
 
-  /**
-   * 비밀번호 변경
-   */
+  // ---------------------
+  // 비밀번호 변경
+  // ---------------------
   async changePassword(userId: number, dto: ChangePasswordDto) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -264,7 +310,31 @@ export class AuthService {
     return { message: '비밀번호가 성공적으로 변경되었습니다.' };
   }
 
+  // ---------------------
+  // 회원 탈퇴
+  // ---------------------
+  async withdraw(userId: number, response: Response) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) {
+      throw new Error('유저를 찾을 수 없습니다.');
+    }
+
+    const maskedEmail = `${user.email}_deleted_${Date.now()}`;
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive: false, email: maskedEmail },
+    });
+
+    response.clearCookie('refreshToken', this.setCookieOptions());
+
+    return { message: '회원 탈퇴가 완료되었습니다.' };
+  }
+
+  // ---------------------
   // 쿠키 설정
+  // ---------------------
   private setCookieOptions(): CookieOptions {
     return {
       httpOnly: true,
@@ -275,7 +345,9 @@ export class AuthService {
     };
   }
 
+  // ---------------------
   // JWT 토큰 생성
+  // ---------------------
   private generateTokens(userId: bigint) {
     const jwtSecret = this.config.get<string>('JWT_SECRET');
 
@@ -292,7 +364,9 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
+  // --------------------------
   // 이메일 인증 토큰 생성
+  // --------------------------
   private generateEmailVerificationToken() {
     const token = uuidv4();
     const expiry = addMinutes(new Date(), TOKEN_EXPIRY_MINUTES);

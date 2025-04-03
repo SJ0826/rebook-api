@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Patch,
   Post,
@@ -108,9 +109,24 @@ export class AuthController {
     return this.authService.logout(response, req.user.id);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Patch('change-password')
+  @UseGuards(JwtAuthGuard)
   async changePassword(@Req() req, @Body() dto: ChangePasswordDto) {
-    return this.authService.changePassword(req.user.id, dto);
+    return await this.authService.changePassword(req.user.id, dto);
+  }
+
+  @Delete('withdraw')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: '회원 탈퇴',
+    description: '사용자가 회원 탈퇴를 진행합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '회원 탈퇴 성공',
+  })
+  @ApiBearerAuth()
+  async withdraw(@Req() req, @Res({ passthrough: true }) response: Response) {
+    return this.authService.withdraw(req.user.id, response);
   }
 }

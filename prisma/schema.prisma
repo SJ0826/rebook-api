@@ -18,6 +18,7 @@ model User {
   emailToken       String?        @map("email_token")
   emailTokenExpiry DateTime?      @map("email_token_expiry")
   emailVerified    Boolean        @default(false) @map("email_verified")
+  isActive         Boolean        @default(true) @map("is_active")
   books            Book[]         @relation("UserBooks")
   favorites        Favorite[]
   Message          Message[]
