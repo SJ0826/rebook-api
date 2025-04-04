@@ -43,7 +43,6 @@ export class AuthService {
   // 회원 가입
   // ---------------------
   async register(dto: UserRegisterDto, response: Response) {
-    const awsConfig = this.config.get<AwsConfig>('aws');
     const { email, password, name } = dto;
 
     const existingUser = await this.prisma.user.findUnique({
@@ -53,25 +52,9 @@ export class AuthService {
     // 비활성화 유저 복구
     if (existingUser && !existingUser.isActive) {
       const hashedPassword = await bcrypt.hash(password, 10);
-
-      const uuid = uuidv4();
-      const s3Key = `upload/user/${uuid}`;
-      const imageBuffer = await generateProfileImage(name);
-
-      const bucket = awsConfig?.s3Bucket;
-      const cloudFrontDomain = awsConfig?.cloudFontDomain;
-
-      await this.s3.send(
-        new PutObjectCommand({
-          Bucket: bucket,
-          Key: s3Key,
-          Body: imageBuffer,
-          ContentType: 'image/png',
-        }),
-      );
-
-      const imageUrl = `https://${cloudFrontDomain}/${s3Key}`;
       const { token, expiry } = this.generateEmailVerificationToken();
+
+      const imageUrl = await this.uploadProfileImage(name);
 
       await this.prisma.user.update({
         where: { email },
@@ -100,23 +83,7 @@ export class AuthService {
     const { token, expiry } = this.generateEmailVerificationToken();
 
     // 기본 프로필 이미지 생성 및 업로드
-    const uuid = uuidv4();
-    const s3Key = `upload/user/${uuid}`;
-    const imageBuffer = await generateProfileImage(name);
-
-    const bucket = awsConfig?.s3Bucket;
-    const cloudFrontDomain = awsConfig?.cloudFontDomain;
-
-    await this.s3.send(
-      new PutObjectCommand({
-        Bucket: bucket,
-        Key: s3Key,
-        Body: imageBuffer,
-        ContentType: 'image/png',
-      }),
-    );
-
-    const imageUrl = `https://${cloudFrontDomain}/${s3Key}`;
+    const imageUrl = await this.uploadProfileImage(name);
 
     // DB에 사용자 생성
     await this.prisma.user.create({
@@ -211,6 +178,11 @@ export class AuthService {
     // 회원 탈퇴 유무 확인
     if (!user.isActive) {
       throw new BadRequestException('해당 계정은 이미 탈퇴 처리되었습니다');
+    }
+
+    // 이메일 인증 확인
+    if (!user.emailVerified) {
+      throw new BadRequestException('이메일 인증이 완료되지 않았습니다');
     }
 
     // JWT 발급
@@ -381,5 +353,29 @@ export class AuthService {
     const token = uuidv4();
     const expiry = addMinutes(new Date(), mailConfig?.tokenExpiry ?? 15);
     return { token, expiry };
+  }
+
+  // --------------------------
+  // 이미지 파일 업로드 (AWS S3)
+  //---------------------------
+  private async uploadProfileImage(name: string): Promise<string> {
+    const awsConfig = this.config.get<AwsConfig>('aws');
+    const uuid = uuidv4();
+    const s3Key = `upload/user/${uuid}`;
+    const imageBuffer = await generateProfileImage(name);
+
+    const bucket = awsConfig?.s3Bucket;
+    const cloudFrontDomain = awsConfig?.cloudFontDomain;
+
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: s3Key,
+        Body: imageBuffer,
+        ContentType: 'image/png',
+      }),
+    );
+
+    return `https://${cloudFrontDomain}/${s3Key}`;
   }
 }
