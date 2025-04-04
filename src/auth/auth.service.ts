@@ -20,8 +20,12 @@ import { UserLoginDto } from './dto/user-login.dto';
 import { ResendVerificationEmailOutDto } from './dto/email.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { generateProfileImage } from '../common/util/generate-profile-image';
-
-const TOKEN_EXPIRY_MINUTES = 15;
+import {
+  AppConfig,
+  AwsConfig,
+  JwtConfig,
+  MailConfig,
+} from '../config/env.type';
 
 @Injectable()
 export class AuthService {
@@ -39,6 +43,7 @@ export class AuthService {
   // 회원 가입
   // ---------------------
   async register(dto: UserRegisterDto, response: Response) {
+    const awsConfig = this.config.get<AwsConfig>('aws');
     const { email, password, name } = dto;
 
     const existingUser = await this.prisma.user.findUnique({
@@ -53,8 +58,8 @@ export class AuthService {
       const s3Key = `upload/user/${uuid}`;
       const imageBuffer = await generateProfileImage(name);
 
-      const bucket = process.env.AWS_S3_BUCKET_NAME;
-      const cloudFrontDomain = process.env.AWS_CLOUDFRONT_DOMAIN;
+      const bucket = awsConfig?.s3Bucket;
+      const cloudFrontDomain = awsConfig?.cloudFontDomain;
 
       await this.s3.send(
         new PutObjectCommand({
@@ -99,8 +104,8 @@ export class AuthService {
     const s3Key = `upload/user/${uuid}`;
     const imageBuffer = await generateProfileImage(name);
 
-    const bucket = process.env.AWS_S3_BUCKET_NAME;
-    const cloudFrontDomain = process.env.AWS_CLOUDFRONT_DOMAIN;
+    const bucket = awsConfig?.s3Bucket;
+    const cloudFrontDomain = awsConfig?.cloudFontDomain;
 
     await this.s3.send(
       new PutObjectCommand({
@@ -228,11 +233,12 @@ export class AuthService {
   // 엑세스 토큰과 리프레시 토큰 새로 갱신
   // -----------------------------------------
   async refreshToken(refreshToken: string, response: Response) {
+    const jwtConfig = this.config.get<JwtConfig>('jwt');
     // 1. RefreshToken에서 userId 추출
     let payload: { userId: bigint };
     try {
       payload = this.jwtService.verify(refreshToken, {
-        secret: process.env.JWT_SECRET || 'JWT_SECRET',
+        secret: jwtConfig?.secret || 'JWT_SECRET',
       });
     } catch {
       response.clearCookie('refreshToken', this.setCookieOptions());
@@ -336,10 +342,13 @@ export class AuthService {
   // 쿠키 설정
   // ---------------------
   private setCookieOptions(): CookieOptions {
+    const appConfig = this.config.get<AppConfig>('app');
+
     return {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: this.config.get('app.nodeEnv') === 'production',
+      sameSite:
+        appConfig?.nodeEnv === this.config.get('app.nodeEnv') ? 'none' : 'lax',
       path: '/',
       expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     };
@@ -349,16 +358,16 @@ export class AuthService {
   // JWT 토큰 생성
   // ---------------------
   private generateTokens(userId: bigint) {
-    const jwtSecret = this.config.get<string>('JWT_SECRET');
+    const jwtConfig = this.config.get<JwtConfig>('jwt');
 
     const accessToken = this.jwtService.sign(
       { userId },
-      { secret: jwtSecret, expiresIn: '15m' },
+      { secret: jwtConfig?.secret, expiresIn: jwtConfig?.accessTokenExpiry },
     );
 
     const refreshToken = this.jwtService.sign(
       { userId },
-      { secret: jwtSecret, expiresIn: '7d' },
+      { secret: jwtConfig?.secret, expiresIn: jwtConfig?.refreshTokenExpiry },
     );
 
     return { accessToken, refreshToken };
@@ -368,8 +377,9 @@ export class AuthService {
   // 이메일 인증 토큰 생성
   // --------------------------
   private generateEmailVerificationToken() {
+    const mailConfig = this.config.get<MailConfig>('mail');
     const token = uuidv4();
-    const expiry = addMinutes(new Date(), TOKEN_EXPIRY_MINUTES);
+    const expiry = addMinutes(new Date(), mailConfig?.tokenExpiry ?? 15);
     return { token, expiry };
   }
 }
