@@ -59,7 +59,7 @@ export class BooksController {
       '<li>sort의 값이 0인 이미지가 대표사진으로 등록됩니다.</li>',
   })
   updateBook(@Param('id') id: string, @Body() updateBookDto: UpdateBookDto) {
-    return this.booksService.updateBook(BigInt(id), updateBookDto);
+    return this.booksService.updateBook(Number(id), updateBookDto);
   }
 
   // 책 판매 상태 수정
@@ -74,7 +74,7 @@ export class BooksController {
     @Body() updateBookSaleStateDtoOut: UpdateBookSaleStatusDtoOut,
   ) {
     return this.booksService.updateBookSaleStatus(
-      BigInt(id),
+      Number(id),
       updateBookSaleStateDtoOut,
     );
   }
@@ -157,7 +157,7 @@ export class BooksController {
     status: 404,
     description: '책을 찾을 수 없음',
   })
-  getBookDetail(@Param('id') id: bigint, @Req() req) {
+  getBookDetail(@Param('id') id: number, @Req() req) {
     console.log(req.user);
     const userId = req.user?.id;
     return this.booksService.getBookDetail(id, userId);

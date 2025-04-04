@@ -48,7 +48,7 @@ export class OrdersController {
     @Body() updateOrderDto: UpdateOrderDto,
   ) {
     return this.ordersService.updateOrderStatus(
-      BigInt(id),
+      Number(id),
       req.user.id,
       updateOrderDto,
     );

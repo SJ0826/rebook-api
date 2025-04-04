@@ -28,7 +28,11 @@ export class MyService {
       throw new NotFoundException('사용자를 찾을 수 없습니다.');
     }
 
-    return user;
+    // return user;
+    return {
+      ...user,
+      id: Number(user.id),
+    };
   }
 
   /** 내 정보 수정 */
@@ -39,7 +43,7 @@ export class MyService {
       throw new NotFoundException('사용자를 찾을 수 없습니다.');
     }
 
-    const updated = await this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
         ...(dto.name && { name: dto.name }),
@@ -54,7 +58,10 @@ export class MyService {
       },
     });
 
-    return updated;
+    return {
+      ...updatedUser,
+      id: Number(updatedUser.id),
+    };
   }
 
   /** 판매중인 책 목록 조회 */

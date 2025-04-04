@@ -38,7 +38,7 @@ export class MyController {
   @ApiResponse({ status: 200, description: '성공' })
   @ApiBearerAuth()
   async getProfile(@Req() req): Promise<UserProfileOutDto> {
-    return this.myService.getUserProfile(req.user.id);
+    return this.myService.getUserProfile(Number(req.user.id));
   }
 
   // 내 정보 수정
@@ -58,7 +58,7 @@ export class MyController {
     @Req() req,
     @Body() dto: UserEditProfileInDto,
   ): Promise<UserProfileOutDto> {
-    return this.myService.updateUserProfile(req.user.id, dto);
+    return this.myService.updateUserProfile(Number(req.user.id), dto);
   }
 
   // 내가 판매중인 책 목록 조회

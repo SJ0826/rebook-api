@@ -41,6 +41,6 @@ export class FavoritesController {
     description: '사용자가 특정 책을 찜 목록에서 제거합니다.',
   })
   remove(@Req() req, @Param('bookId') bookId: string) {
-    return this.favoritesService.remove(req.user.id, BigInt(bookId));
+    return this.favoritesService.remove(req.user.id, Number(bookId));
   }
 }

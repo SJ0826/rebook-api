@@ -23,7 +23,7 @@ export class OrdersService {
       if (!book) throw new NotFoundException('해당 책을 찾을 수 없습니다.');
 
       // 2. 구매자와 판매자가 동일하면 거래를 생성할 수 없음.
-      if (BigInt(book.sellerId) === BigInt(buyerId))
+      if (Number(book.sellerId) === Number(buyerId))
         throw new ForbiddenException('본인의 책을 구매할 수 없습니다.');
 
       // 3. 거래 생성
@@ -50,8 +50,8 @@ export class OrdersService {
    * 거래 상태 변경 (판매자가 승인/취소 가능)
    */
   async updateOrderStatus(
-    orderId: bigint,
-    sellerId: bigint,
+    orderId: number,
+    sellerId: number,
     updateOrderDto: UpdateOrderDto,
   ) {
     const { status } = updateOrderDto;
@@ -63,7 +63,7 @@ export class OrdersService {
     if (!order) throw new NotFoundException('해당 주문을 찾을 수 없습니다.');
 
     // 판매자만 거래 상태 변경 가능
-    if (order.sellerId !== sellerId) {
+    if (Number(order.sellerId) !== sellerId) {
       throw new ForbiddenException('이 주문을 변경할 권한이 없습니다.');
     }
 
@@ -76,7 +76,7 @@ export class OrdersService {
   /**
    * 구매 내역 조회
    */
-  async getBuyerOrders(buyerId: bigint) {
+  async getBuyerOrders(buyerId: number) {
     return this.prisma.order.findMany({
       where: { buyerId },
       include: { book: true },
@@ -86,7 +86,7 @@ export class OrdersService {
   /**
    * 판매 내역 조회
    */
-  async getSellerOrders(sellerId: bigint) {
+  async getSellerOrders(sellerId: number) {
     return this.prisma.order.findMany({
       where: { sellerId },
       include: { book: true },

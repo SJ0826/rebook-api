@@ -146,7 +146,7 @@ export class AuthService {
       throw new BadRequestException('유효하지 않거나 만료된 토큰입니다.');
     }
 
-    const { accessToken, refreshToken } = this.generateTokens(user.id);
+    const { accessToken, refreshToken } = this.generateTokens(Number(user.id));
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
 
     await this.prisma.user.update({
@@ -186,7 +186,7 @@ export class AuthService {
     }
 
     // JWT 발급
-    const { accessToken, refreshToken } = this.generateTokens(user.id);
+    const { accessToken, refreshToken } = this.generateTokens(Number(user.id));
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
 
     await this.prisma.user.update({
@@ -206,8 +206,9 @@ export class AuthService {
   // -----------------------------------------
   async refreshToken(refreshToken: string, response: Response) {
     const jwtConfig = this.config.get<JwtConfig>('jwt');
+
     // 1. RefreshToken에서 userId 추출
-    let payload: { userId: bigint };
+    let payload: { userId: number };
     try {
       payload = this.jwtService.verify(refreshToken, {
         secret: jwtConfig?.secret || 'JWT_SECRET',
@@ -231,7 +232,7 @@ export class AuthService {
 
     // 4. 새 토큰 발급
     const { accessToken, refreshToken: newRefreshToken } = this.generateTokens(
-      user.id,
+      Number(user.id),
     );
 
     // 5. 새 refreshToken 해싱 후 DB 업데이트 (이전 토큰 무효화)
@@ -249,7 +250,7 @@ export class AuthService {
   // ---------------------
   // 로그아웃
   // ---------------------
-  async logout(response: Response, userId: bigint) {
+  async logout(response: Response, userId: number) {
     response.clearCookie('refreshToken', this.setCookieOptions());
 
     await this.prisma.user.update({
@@ -329,7 +330,7 @@ export class AuthService {
   // ---------------------
   // JWT 토큰 생성
   // ---------------------
-  private generateTokens(userId: bigint) {
+  private generateTokens(userId: number) {
     const jwtConfig = this.config.get<JwtConfig>('jwt');
 
     const accessToken = this.jwtService.sign(

@@ -29,12 +29,14 @@ export class ChatGateway {
   @SubscribeMessage('joinRoom')
   async handleJoinRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { chatRoomId: bigint },
+    @MessageBody() data: { chatRoomId: number },
   ) {
     await client.join(`chat-${data.chatRoomId}`);
 
     // 기존 메세지를 불러와서 클라이언트에게 전송
-    const messages = await this.chatService.getMessages(data.chatRoomId);
+    const messages = await this.chatService.getMessages(
+      Number(data.chatRoomId),
+    );
     client.emit('loadMessages', messages);
   }
 

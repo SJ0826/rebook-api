@@ -30,7 +30,7 @@ export class FavoritesService {
   /**
    * 찜한 책 목록 조회
    */
-  async findAll(userId: bigint) {
+  async findAll(userId: number) {
     return this.prisma.favorite.findMany({
       where: { userId },
       include: { book: true },
@@ -40,7 +40,7 @@ export class FavoritesService {
   /**
    * 찜 해제
    */
-  async remove(userId: bigint, bookId: bigint) {
+  async remove(userId: number, bookId: number) {
     const favorite = await this.prisma.favorite.findFirst({
       where: { userId, bookId },
     });

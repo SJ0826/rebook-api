@@ -19,7 +19,7 @@ export class BooksService {
   /**
    * 책 등록 (Create)
    */
-  async create(sellerId: bigint, createBookDto: CreateBookDto) {
+  async create(sellerId: number, createBookDto: CreateBookDto) {
     return this.prisma.$transaction(async (tx) => {
       // 1. 유효한 사용자 확인
       const seller = await tx.user.findUnique({
@@ -81,7 +81,7 @@ export class BooksService {
   /**
    * 책 수정 (Update)
    */
-  async updateBook(id: bigint, updateBookDto: UpdateBookDto) {
+  async updateBook(id: number, updateBookDto: UpdateBookDto) {
     return this.prisma.$transaction(async (tx) => {
       // 1. 기존 책 조회
       const existingBook = await tx.book.findUnique({
@@ -151,7 +151,7 @@ export class BooksService {
    * 책 판매 상태 수정
    */
   async updateBookSaleStatus(
-    id: bigint,
+    id: number,
     updateBookSaleStatusDtoOut: UpdateBookSaleStatusDtoOut,
   ) {
     const { saleStatus } = updateBookSaleStatusDtoOut;
@@ -288,7 +288,7 @@ export class BooksService {
   /**
    * 책 상세 조회
    */
-  async getBookDetail(bookId: bigint, userId: number | null) {
+  async getBookDetail(bookId: number, userId: number | null) {
     const book = await this.prisma.book.findUnique({
       where: { id: bookId },
       include: {

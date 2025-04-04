@@ -26,7 +26,7 @@ export class ChatController {
     description: '특정 채팅방의 기존 메시지를 조회합니다.',
   })
   async getChatMessages(@Param('chatRoomId') chatRoomId: string) {
-    return this.chatService.getMessages(BigInt(chatRoomId));
+    return this.chatService.getMessages(Number(chatRoomId));
   }
 
   /**
@@ -51,6 +51,6 @@ export class ChatController {
       "사용자가 채팅방을 읽었을 때 해당 채팅방의 'lastReadAt'을 업데이트합니다.",
   })
   async markChatAsRead(@Req() req, @Param('chatRoomId') chatRoomId: string) {
-    return this.chatService.markChatAsRead(req.user.id, BigInt(chatRoomId));
+    return this.chatService.markChatAsRead(req.user.id, Number(chatRoomId));
   }
 }
