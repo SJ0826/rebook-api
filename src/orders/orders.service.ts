@@ -11,9 +11,9 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 export class OrdersService {
   constructor(private prisma: PrismaService) {}
 
-  /**
-   * 거래 요청 (주문 생성)
-   */
+  // -------------------------
+  // 거래 요청 (주문 생성)
+  // -------------------------
   async createOrder(buyerId: number, createOrderDto: CreateOrderDto) {
     return this.prisma.$transaction(async (tx) => {
       const { bookId } = createOrderDto;
@@ -46,9 +46,9 @@ export class OrdersService {
     });
   }
 
-  /**
-   * 거래 상태 변경 (판매자가 승인/취소 가능)
-   */
+  // --------------------------------------------------
+  // 거래 상태 변경 (판매자가 승인/취소 가능)
+  // --------------------------------------------------
   async updateOrderStatus(
     orderId: number,
     sellerId: number,
@@ -73,9 +73,9 @@ export class OrdersService {
     });
   }
 
-  /**
-   * 구매 내역 조회
-   */
+  // ------------------------
+  // 구매 내역 조회
+  // ------------------------
   async getBuyerOrders(buyerId: number) {
     return this.prisma.order.findMany({
       where: { buyerId },
@@ -83,9 +83,9 @@ export class OrdersService {
     });
   }
 
-  /**
-   * 판매 내역 조회
-   */
+  // ------------------------
+  // 판매 내역 조회
+  // ------------------------
   async getSellerOrders(sellerId: number) {
     return this.prisma.order.findMany({
       where: { sellerId },

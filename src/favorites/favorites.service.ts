@@ -10,9 +10,9 @@ import { CreateFavoriteDto } from './dto/create-favorite.dto';
 export class FavoritesService {
   constructor(private prisma: PrismaService) {}
 
-  /**
-   * 책 찜하기
-   */
+  // -------------------
+  // 책 찜하기
+  // -------------------
   async create(userId: number, createFavoriteDto: CreateFavoriteDto) {
     const { bookId } = createFavoriteDto;
     const existingFavorite = await this.prisma.favorite.findFirst({
@@ -27,9 +27,9 @@ export class FavoritesService {
     });
   }
 
-  /**
-   * 찜한 책 목록 조회
-   */
+  // ----------------------
+  // 찜한 책 목록 조회
+  // ----------------------
   async findAll(userId: number) {
     return this.prisma.favorite.findMany({
       where: { userId },
@@ -37,9 +37,9 @@ export class FavoritesService {
     });
   }
 
-  /**
-   * 찜 해제
-   */
+  // ----------------------
+  // 찜 해제
+  // ----------------------
   async remove(userId: number, bookId: number) {
     const favorite = await this.prisma.favorite.findFirst({
       where: { userId, bookId },

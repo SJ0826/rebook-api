@@ -22,9 +22,9 @@ export class FileService {
     private readonly config: ConfigService,
   ) {}
 
-  /**
-   * 다중 파일 업로드 + S3 URL 반환
-   */
+  // -----------------------------------
+  // 다중 파일 업로드 + S3 URL 반환
+  // -----------------------------------
   async uploadImages(files: Express.Multer.File[]) {
     const awsConfig = this.config.get<AwsConfig>('aws');
 

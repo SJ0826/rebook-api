@@ -9,9 +9,9 @@ export class MyService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * 내 프로필 조회
-   */
+  // ---------------------
+  // 내 프로필 조회
+  // ---------------------
   async getUserProfile(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -35,7 +35,9 @@ export class MyService {
     };
   }
 
-  /** 내 정보 수정 */
+  // ---------------------
+  // 내 정보 수정
+  // ---------------------
   async updateUserProfile(userId: number, dto: UserEditProfileInDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
@@ -64,7 +66,9 @@ export class MyService {
     };
   }
 
-  /** 판매중인 책 목록 조회 */
+  // -------------------------
+  // 판매중인 책 목록 조회
+  // -------------------------
   async getSellingBooks(
     userId: number,
     filters?: {
@@ -144,7 +148,9 @@ export class MyService {
     };
   }
 
-  /** 판매중인 책 목록 조회 */
+  // -------------------------
+  // 판매중인 책 목록 조회
+  // -------------------------
   async getBuyingBooks(
     userId: number,
     filters?: {
@@ -224,7 +230,9 @@ export class MyService {
     };
   }
 
-  /** 관심 책장(좋아요) 책 목록 조회 */
+  // --------------------------------
+  // 관심 책장(좋아요) 책 목록 조회
+  // --------------------------------
   async getFavoriteBooks(
     userId: number,
     filters?: {
