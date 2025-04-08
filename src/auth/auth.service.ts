@@ -20,12 +20,7 @@ import { UserLoginDto } from './dto/user-login.dto';
 import { ResendVerificationEmailOutDto } from './dto/email.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { generateProfileImage } from '../common/util/generate-profile-image';
-import {
-  AppConfig,
-  AwsConfig,
-  JwtConfig,
-  MailConfig,
-} from '../config/env.type';
+import { AwsConfig, JwtConfig, MailConfig } from '../config/env.type';
 
 @Injectable()
 export class AuthService {
@@ -206,7 +201,8 @@ export class AuthService {
   // -----------------------------------------
   async refreshToken(refreshToken: string, response: Response) {
     const jwtConfig = this.config.get<JwtConfig>('jwt');
-
+    this.logger.debug('refreshToken', refreshToken);
+    // this.logger.debug('newRefreshToken', newRefreshToken);
     // 1. RefreshToken에서 userId 추출
     let payload: { userId: number };
     try {
@@ -222,6 +218,8 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.userId },
     });
+    this.logger.error('user.refreshToken', payload);
+
     if (
       !user ||
       !user.refreshToken ||
@@ -229,7 +227,6 @@ export class AuthService {
     ) {
       throw new UnauthorizedException('유효하지 않은 토큰입니다.');
     }
-
     // 4. 새 토큰 발급
     const { accessToken, refreshToken: newRefreshToken } = this.generateTokens(
       Number(user.id),
@@ -315,15 +312,15 @@ export class AuthService {
   // 쿠키 설정
   // ---------------------
   private setCookieOptions(): CookieOptions {
-    const appConfig = this.config.get<AppConfig>('app');
+    const nodeEnv = this.config.get('app.nodeEnv');
+    const isProd = nodeEnv === 'production';
 
     return {
       httpOnly: true,
-      secure: this.config.get('app.nodeEnv') === 'production',
-      sameSite:
-        appConfig?.nodeEnv === this.config.get('app.nodeEnv') ? 'none' : 'lax',
+      secure: isProd, // 개발에선 false
+      sameSite: isProd ? 'none' : 'lax', // CORS 허용
       path: '/',
-      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     };
   }
 
