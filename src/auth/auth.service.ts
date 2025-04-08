@@ -20,8 +20,7 @@ import { UserLoginDto } from './dto/user-login.dto';
 import { ResendVerificationEmailOutDto } from './dto/email.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { generateProfileImage } from '../common/util/generate-profile-image';
-
-const TOKEN_EXPIRY_MINUTES = 15;
+import { AwsConfig, JwtConfig, MailConfig } from '../config/env.type';
 
 @Injectable()
 export class AuthService {
@@ -48,25 +47,9 @@ export class AuthService {
     // 비활성화 유저 복구
     if (existingUser && !existingUser.isActive) {
       const hashedPassword = await bcrypt.hash(password, 10);
-
-      const uuid = uuidv4();
-      const s3Key = `upload/user/${uuid}`;
-      const imageBuffer = await generateProfileImage(name);
-
-      const bucket = process.env.AWS_S3_BUCKET_NAME;
-      const cloudFrontDomain = process.env.AWS_CLOUDFRONT_DOMAIN;
-
-      await this.s3.send(
-        new PutObjectCommand({
-          Bucket: bucket,
-          Key: s3Key,
-          Body: imageBuffer,
-          ContentType: 'image/png',
-        }),
-      );
-
-      const imageUrl = `https://${cloudFrontDomain}/${s3Key}`;
       const { token, expiry } = this.generateEmailVerificationToken();
+
+      const imageUrl = await this.uploadProfileImage(name);
 
       await this.prisma.user.update({
         where: { email },
@@ -95,23 +78,7 @@ export class AuthService {
     const { token, expiry } = this.generateEmailVerificationToken();
 
     // 기본 프로필 이미지 생성 및 업로드
-    const uuid = uuidv4();
-    const s3Key = `upload/user/${uuid}`;
-    const imageBuffer = await generateProfileImage(name);
-
-    const bucket = process.env.AWS_S3_BUCKET_NAME;
-    const cloudFrontDomain = process.env.AWS_CLOUDFRONT_DOMAIN;
-
-    await this.s3.send(
-      new PutObjectCommand({
-        Bucket: bucket,
-        Key: s3Key,
-        Body: imageBuffer,
-        ContentType: 'image/png',
-      }),
-    );
-
-    const imageUrl = `https://${cloudFrontDomain}/${s3Key}`;
+    const imageUrl = await this.uploadProfileImage(name);
 
     // DB에 사용자 생성
     await this.prisma.user.create({
@@ -174,7 +141,7 @@ export class AuthService {
       throw new BadRequestException('유효하지 않거나 만료된 토큰입니다.');
     }
 
-    const { accessToken, refreshToken } = this.generateTokens(user.id);
+    const { accessToken, refreshToken } = this.generateTokens(Number(user.id));
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
 
     await this.prisma.user.update({
@@ -208,8 +175,13 @@ export class AuthService {
       throw new BadRequestException('해당 계정은 이미 탈퇴 처리되었습니다');
     }
 
+    // 이메일 인증 확인
+    if (!user.emailVerified) {
+      throw new BadRequestException('이메일 인증이 완료되지 않았습니다');
+    }
+
     // JWT 발급
-    const { accessToken, refreshToken } = this.generateTokens(user.id);
+    const { accessToken, refreshToken } = this.generateTokens(Number(user.id));
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
 
     await this.prisma.user.update({
@@ -228,11 +200,14 @@ export class AuthService {
   // 엑세스 토큰과 리프레시 토큰 새로 갱신
   // -----------------------------------------
   async refreshToken(refreshToken: string, response: Response) {
+    const jwtConfig = this.config.get<JwtConfig>('jwt');
+    this.logger.debug('refreshToken', refreshToken);
+    // this.logger.debug('newRefreshToken', newRefreshToken);
     // 1. RefreshToken에서 userId 추출
-    let payload: { userId: bigint };
+    let payload: { userId: number };
     try {
       payload = this.jwtService.verify(refreshToken, {
-        secret: process.env.JWT_SECRET || 'JWT_SECRET',
+        secret: jwtConfig?.secret || 'JWT_SECRET',
       });
     } catch {
       response.clearCookie('refreshToken', this.setCookieOptions());
@@ -243,6 +218,8 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.userId },
     });
+    this.logger.error('user.refreshToken', payload);
+
     if (
       !user ||
       !user.refreshToken ||
@@ -250,10 +227,9 @@ export class AuthService {
     ) {
       throw new UnauthorizedException('유효하지 않은 토큰입니다.');
     }
-
     // 4. 새 토큰 발급
     const { accessToken, refreshToken: newRefreshToken } = this.generateTokens(
-      user.id,
+      Number(user.id),
     );
 
     // 5. 새 refreshToken 해싱 후 DB 업데이트 (이전 토큰 무효화)
@@ -271,7 +247,7 @@ export class AuthService {
   // ---------------------
   // 로그아웃
   // ---------------------
-  async logout(response: Response, userId: bigint) {
+  async logout(response: Response, userId: number) {
     response.clearCookie('refreshToken', this.setCookieOptions());
 
     await this.prisma.user.update({
@@ -336,29 +312,32 @@ export class AuthService {
   // 쿠키 설정
   // ---------------------
   private setCookieOptions(): CookieOptions {
+    const nodeEnv = this.config.get('app.nodeEnv');
+    const isProd = nodeEnv === 'production';
+
     return {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: isProd, // 개발에선 false
+      sameSite: isProd ? 'none' : 'lax', // CORS 허용
       path: '/',
-      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     };
   }
 
   // ---------------------
   // JWT 토큰 생성
   // ---------------------
-  private generateTokens(userId: bigint) {
-    const jwtSecret = this.config.get<string>('JWT_SECRET');
+  private generateTokens(userId: number) {
+    const jwtConfig = this.config.get<JwtConfig>('jwt');
 
     const accessToken = this.jwtService.sign(
       { userId },
-      { secret: jwtSecret, expiresIn: '15m' },
+      { secret: jwtConfig?.secret, expiresIn: jwtConfig?.accessTokenExpiry },
     );
 
     const refreshToken = this.jwtService.sign(
       { userId },
-      { secret: jwtSecret, expiresIn: '7d' },
+      { secret: jwtConfig?.secret, expiresIn: jwtConfig?.refreshTokenExpiry },
     );
 
     return { accessToken, refreshToken };
@@ -368,8 +347,33 @@ export class AuthService {
   // 이메일 인증 토큰 생성
   // --------------------------
   private generateEmailVerificationToken() {
+    const mailConfig = this.config.get<MailConfig>('mail');
     const token = uuidv4();
-    const expiry = addMinutes(new Date(), TOKEN_EXPIRY_MINUTES);
+    const expiry = addMinutes(new Date(), mailConfig?.tokenExpiry ?? 15);
     return { token, expiry };
+  }
+
+  // --------------------------
+  // 이미지 파일 업로드 (AWS S3)
+  //---------------------------
+  private async uploadProfileImage(name: string): Promise<string> {
+    const awsConfig = this.config.get<AwsConfig>('aws');
+    const uuid = uuidv4();
+    const s3Key = `upload/user/${uuid}`;
+    const imageBuffer = await generateProfileImage(name);
+
+    const bucket = awsConfig?.s3Bucket;
+    const cloudFrontDomain = awsConfig?.cloudFontDomain;
+
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: s3Key,
+        Body: imageBuffer,
+        ContentType: 'image/png',
+      }),
+    );
+
+    return `https://${cloudFrontDomain}/${s3Key}`;
   }
 }

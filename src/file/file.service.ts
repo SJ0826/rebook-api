@@ -8,8 +8,9 @@ import {
 } from '@nestjs/common';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
-import * as process from 'node:process';
 import { PrismaService } from '../prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
+import { AwsConfig } from '../config/env.type';
 
 @Injectable()
 export class FileService {
@@ -18,19 +19,21 @@ export class FileService {
   constructor(
     @Inject('S3_CLIENT') private readonly s3: S3Client,
     private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
   ) {}
 
-  /**
-   * 다중 파일 업로드 + S3 URL 반환
-   */
+  // -----------------------------------
+  // 다중 파일 업로드 + S3 URL 반환
+  // -----------------------------------
   async uploadImages(files: Express.Multer.File[]) {
+    const awsConfig = this.config.get<AwsConfig>('aws');
+
     if (!files || files.length === 0) {
       throw new BadRequestException('파일을 하나 이상 업로드해야 합니다.');
     }
 
-    const bucket = process.env.AWS_S3_BUCKET_NAME;
-    const region = process.env.AWS_REGION;
-    const cloudFrontDomain = process.env.AWS_CLOUDFRONT_DOMAIN;
+    const bucket = awsConfig?.s3Bucket;
+    const cloudFrontDomain = awsConfig?.cloudFontDomain;
     const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
     const uploadedImages = await Promise.all(
@@ -63,9 +66,6 @@ export class FileService {
             ContentType: file.mimetype,
           }),
         );
-
-        // 4. S3 URL 생성
-        // const imageFileUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 
         // 4. CloudFront URL 생성
         const imageFileUrl = `https://${cloudFrontDomain}/${key}`;
