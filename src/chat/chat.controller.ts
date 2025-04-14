@@ -3,10 +3,12 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ChatService } from './chat.service';
 import {
   ApiBearerAuth,
+  ApiOkResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { ChatListItemDto } from './dto/chat-list.dto';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
@@ -16,6 +18,19 @@ import {
 @ApiBearerAuth()
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
+
+  /**
+   * 사용자별 채팅방 목록 조회
+   */
+  @Get('/')
+  @ApiOperation({
+    summary: '채팅 목록 조회',
+    description: '사용자가 채팅 목록을 조회합니다.',
+  })
+  @ApiOkResponse({ type: [ChatListItemDto] })
+  async getChatList(@Req() req): Promise<ChatListItemDto[]> {
+    return this.chatService.getChatList(req.user.id);
+  }
 
   /**
    * 특정 채팅방의 기존 메세지 조회

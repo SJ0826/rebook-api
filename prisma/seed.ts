@@ -1,87 +1,93 @@
-import { BookStatus, PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding users...');
-
-  const users = [
-    { name: '김철수', email: 'chulsoo@example.com', password: 'password123' },
-    { name: '이영희', email: 'younghee@example.com', password: 'password123' },
-    { name: '박민준', email: 'minjun@example.com', password: 'password123' },
-    { name: '최수연', email: 'sooyeon@example.com', password: 'password123' },
-    { name: '한지원', email: 'jiwon@example.com', password: 'password123' },
-  ];
-
-  for (const user of users) {
-    const hashedPassword = await bcrypt.hash(user.password, 10);
-    await prisma.user.create({
-      data: { ...user, password: hashedPassword },
-    });
-  }
-
-  console.log('✅ User seeding completed.');
-
-  console.log('📚 Seeding books...');
-
-  const books = [
-    {
-      title: '해리 포터와 마법사의 돌',
-      author: 'J.K. 롤링',
-      publisher: '문학수첩',
-      price: 15000,
-      status: BookStatus.NEW, // ✅ ENUM 타입으로 변경
+  const seller = await prisma.user.upsert({
+    where: { email: 'seller@example.com' },
+    update: {},
+    create: {
+      email: 'seller@example.com',
+      password: 'hashed_pw_1',
+      name: '판매자',
+      emailVerified: true,
+      isActive: true,
     },
-    {
-      title: '자바스크립트 완벽 가이드',
-      author: 'David Flanagan',
-      publisher: '한빛미디어',
-      price: 38000,
-      status: BookStatus.LIKE_NEW, // ✅ ENUM 타입으로 변경
-    },
-    {
-      title: '나미야 잡화점의 기적',
-      author: '히가시노 게이고',
-      publisher: '현대문학',
-      price: 14000,
-      status: BookStatus.GOOD, // ✅ ENUM 타입으로 변경
-    },
-    {
-      title: '데미안',
-      author: '헤르만 헤세',
-      publisher: '민음사',
-      price: 11000,
-      status: BookStatus.ACCEPTABLE, // ✅ ENUM 타입으로 변경
-    },
-    {
-      title: '모비딕',
-      author: '허먼 멜빌',
-      publisher: '열린책들',
-      price: 19000,
-      status: BookStatus.LIKE_NEW, // ✅ ENUM 타입으로 변경
-    },
-  ];
+  });
 
-  const sellers = await prisma.user.findMany({ take: 5 });
+  const buyer = await prisma.user.upsert({
+    where: { email: 'buyer@example.com' },
+    update: {},
+    create: {
+      email: 'buyer@example.com',
+      password: 'hashed_pw_2',
+      name: '구매자',
+      emailVerified: true,
+      isActive: true,
+    },
+  });
 
-  for (let i = 0; i < books.length; i++) {
-    await prisma.book.create({
-      data: {
-        ...books[i],
-        sellerId: sellers[i % sellers.length].id,
+  const book = await prisma.book.create({
+    data: {
+      title: '자바의 정석',
+      author: '남궁성',
+      publisher: '도우출판',
+      price: 20000,
+      status: 'GOOD',
+      description: '중고책입니다',
+      sellerId: seller.id,
+    },
+  });
+
+  const order = await prisma.order.create({
+    data: {
+      bookId: book.id,
+      buyerId: buyer.id,
+      sellerId: seller.id,
+    },
+  });
+
+  const chatRoom = await prisma.chatRoom.create({
+    data: {
+      orderId: order.id,
+    },
+  });
+
+  await prisma.userChatRoom.createMany({
+    data: [
+      {
+        userId: seller.id,
+        chatRoomId: chatRoom.id,
       },
-    });
-  }
+      {
+        userId: buyer.id,
+        chatRoomId: chatRoom.id,
+      },
+    ],
+  });
 
-  console.log('✅ Book seeding completed.');
+  await prisma.message.createMany({
+    data: [
+      {
+        senderId: buyer.id,
+        chatRoomId: chatRoom.id,
+        content: '안녕하세요, 구매하고 싶어요!',
+      },
+      {
+        senderId: seller.id,
+        chatRoomId: chatRoom.id,
+        content: '네, 가능합니다. 언제 만나실 수 있나요?',
+      },
+    ],
+  });
+
+  console.log('✅ 더미 데이터 삽입 완료!');
 }
 
 main()
-  .catch((e) => console.error(e))
-  .finally(async () => {
-    await prisma.$disconnect();
+  .then(() => prisma.$disconnect())
+  .catch((e) => {
+    console.error(e);
+    prisma.$disconnect();
+    process.exit(1);
   });

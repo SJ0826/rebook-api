@@ -54,7 +54,7 @@ export class ChatGateway {
     },
   ) {
     const { chatRoomId, senderId, content } = data;
-    this.logger.debug(client.id);
+
     console.log('📩 받은 데이터:', data);
     // 메시지 저장
     const message = await this.prisma.message.create({
