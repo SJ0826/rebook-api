@@ -167,6 +167,7 @@ export class AuthService {
 
     // 이메일, 비밀번호 검증
     if (!user || !(await bcrypt.compare(password, user.password))) {
+      this.logger.error(password, user?.password);
       throw new BadRequestException('이메일 또는 비밀번호가 잘못되었습니다');
     }
 

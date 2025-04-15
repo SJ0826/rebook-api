@@ -32,11 +32,11 @@ export class ChatService {
             UserChatRoom: {
               where: {
                 userId: {
-                  not: userId, // 상대방만 가져옴
+                  not: userId,
                 },
               },
               include: {
-                user: true, // 상대방 유저 정보
+                user: true,
               },
             },
           },
