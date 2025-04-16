@@ -6,3 +6,5 @@ export class CreateOrderDto {
   @IsNumber()
   bookId: number;
 }
+
+export class CreateOrderDtoOut {}

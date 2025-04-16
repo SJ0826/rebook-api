@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -25,6 +26,14 @@ export class OrdersService {
       // 2. 구매자와 판매자가 동일하면 거래를 생성할 수 없음.
       if (Number(book.sellerId) === Number(buyerId))
         throw new ForbiddenException('본인의 책을 구매할 수 없습니다.');
+
+      // 2-1. 기존 거래가 존재하면 생성할 수 없음.
+      const existingOrder = await this.prisma.order.findFirst({
+        where: { buyerId, sellerId: book.sellerId, bookId },
+      });
+      if (existingOrder) {
+        throw new ConflictException('이미 거래 제안을 보낸 책입니다.');
+      }
 
       // 3. 거래 생성
       const order = tx.order.create({
