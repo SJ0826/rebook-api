@@ -202,8 +202,7 @@ export class AuthService {
   // -----------------------------------------
   async refreshToken(refreshToken: string, response: Response) {
     const jwtConfig = this.config.get<JwtConfig>('jwt');
-    this.logger.debug('refreshToken', refreshToken);
-    // this.logger.debug('newRefreshToken', newRefreshToken);
+
     // 1. RefreshToken에서 userId 추출
     let payload: { userId: number };
     try {
@@ -219,7 +218,6 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.userId },
     });
-    this.logger.error('user.refreshToken', payload);
 
     if (
       !user ||

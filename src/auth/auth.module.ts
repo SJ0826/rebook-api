@@ -34,5 +34,6 @@ import { S3Client } from '@aws-sdk/client-s3';
     },
   ],
   controllers: [AuthController],
+  exports: [JwtModule],
 })
 export class AuthModule {}

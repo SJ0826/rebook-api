@@ -5,6 +5,8 @@ import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { ResponseInterceptor } from './common/interceptor/response.interceptor';
 import { HttpExceptionFilter } from './common/filter/http-exception.filter';
+import { ConfigService } from '@nestjs/config';
+import { SocketIoAdapter } from './common/adapters/ws.adapter';
 
 async function bootstrap() {
   BigInt.prototype.toJSON = function () {
@@ -13,10 +15,15 @@ async function bootstrap() {
   };
 
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
 
   // cors error
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3001'],
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      configService.get('CLIENT_URL'),
+    ],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
@@ -41,7 +48,10 @@ async function bootstrap() {
   // global pips
   app.useGlobalPipes(new ValidationPipe());
 
-  await app.listen(process.env.PORT ?? 3000);
+  // ws adapter
+  app.useWebSocketAdapter(new SocketIoAdapter(app, configService));
+
+  await app.listen(configService.get('PORT') ?? 3000);
 }
 
 bootstrap();
