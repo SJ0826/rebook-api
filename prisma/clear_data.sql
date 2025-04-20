@@ -1,8 +1,16 @@
-TRUNCATE TABLE "User" CASCADE;
-TRUNCATE TABLE "Book" CASCADE;
-TRUNCATE TABLE "Order" CASCADE;
-TRUNCATE TABLE "ChatRoom" CASCADE;
-TRUNCATE TABLE "Message" CASCADE;
-TRUNCATE TABLE "UserChatRoom" CASCADE;
-TRUNCATE TABLE "Favorite" CASCADE;
-TRUNCATE TABLE "BookImage" CASCADE;
+-- 외래 키 제약 무시
+SET session_replication_role = replica;
+
+TRUNCATE TABLE
+    "Message",
+  "UserChatRoom",
+  "ChatRoom",
+  "Order",
+  "Favorite",
+  "BookImage",
+  "Book",
+  "User"
+RESTART IDENTITY CASCADE;
+
+-- 다시 제약 설정
+SET session_replication_role = origin;

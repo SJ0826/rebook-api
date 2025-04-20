@@ -45,10 +45,22 @@ export class OrdersService {
       });
 
       // 4. 채팅방 생성
-      await tx.chatRoom.create({
+      const chatRoom = await tx.chatRoom.create({
         data: {
           orderId: (await order).id,
         },
+      });
+      await tx.userChatRoom.createMany({
+        data: [
+          {
+            userId: buyerId,
+            chatRoomId: chatRoom.id,
+          },
+          {
+            userId: book.sellerId,
+            chatRoomId: chatRoom.id,
+          },
+        ],
       });
 
       return order;
