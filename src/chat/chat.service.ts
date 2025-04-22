@@ -1,12 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ChatService {
+  private readonly logger: Logger = new Logger(ChatService.name);
+
   constructor(private prisma: PrismaService) {}
 
   // --------------------------------
   // 사용자의 채팅 목록 조회
+
   // --------------------------------
   async getChatList(userId: number) {
     const userChatRooms = await this.prisma.userChatRoom.findMany({
@@ -118,6 +121,27 @@ export class ChatService {
     return this.prisma.userChatRoom.update({
       where: { userId_chatRoomId: { userId, chatRoomId } },
       data: { lastReadAt: new Date() },
+    });
+  }
+
+  // --------------------------------
+  // 사용자 메세지 전송 (send)
+  // --------------------------------
+  async saveMessage({
+    content,
+    senderId,
+    chatRoomId,
+  }: {
+    content: string;
+    senderId: number;
+    chatRoomId: number;
+  }) {
+    return this.prisma.message.create({
+      data: {
+        content,
+        senderId,
+        chatRoomId,
+      },
     });
   }
 }

@@ -7,6 +7,7 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../prisma/prisma.service';
@@ -91,28 +92,32 @@ export class ChatGateway
     client.emit('loadMessages', messages);
   }
 
-  /**
-   * 메시지 전송 (채팅)
-   */
   @SubscribeMessage('message')
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody()
-    data: {
-      chatRoomId: number;
-      senderId: number;
-      content: string;
-    },
+    @MessageBody() data: { chatRoomId: number; content: string },
   ) {
-    const { chatRoomId, senderId, content } = data;
-
-    console.log('📩 받은 데이터:', data);
-    // 메시지 저장
-    const message = await this.prisma.message.create({
-      data: { chatRoomId, senderId, content },
+    const user = this.getUserFromSocket(client);
+    this.logger.debug(user, '여기야 여기');
+    if (!user) {
+      throw new WsException('인증된 사용자만 메시지를 보낼 수 있습니다.');
+    }
+    const message = await this.chatService.saveMessage({
+      chatRoomId: data.chatRoomId,
+      content: data.content,
+      senderId: user.id,
     });
 
-    // 해당 채팅방의 모든 사용자에게 메시지 전송
-    this.server.to(`chat-${chatRoomId}`).emit('newMessage', message);
+    this.server.to(`chat-${data.chatRoomId}`).emit('newMessage', message);
+  }
+
+  getUserFromSocket(client: Socket): { id: number } | null {
+    try {
+      const token = client.handshake.auth.token;
+      const payload = this.jwtService.verify(token);
+      return { id: payload.userId };
+    } catch (e) {
+      return null;
+    }
   }
 }
