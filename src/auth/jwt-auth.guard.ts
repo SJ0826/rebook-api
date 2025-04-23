@@ -13,18 +13,6 @@ import { User } from '@prisma/client';
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   canActivate(context: ExecutionContext) {
-    const isHttp = context.getType() === 'http';
-    const request = context.switchToHttp().getRequest();
-
-    // ✅ 소켓 핸드쉐이크 요청은 인증 검사 패스
-    // if (
-    //   !isHttp ||
-    //   request.url.startsWith('/ws-chat') ||
-    //   request.url.includes('/socket.io')
-    // ) {
-    //   return true;
-    // }
-
     return super.canActivate(context);
   }
 

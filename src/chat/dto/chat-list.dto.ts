@@ -1,4 +1,26 @@
+// dto/book-summary.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
+
+export class BookSummaryDto {
+  @ApiProperty({ example: 42 })
+  id: bigint;
+
+  @ApiProperty({ example: '나미야 잡화점의 기적' })
+  title: string;
+
+  @ApiProperty({ example: 9500 })
+  price: bigint;
+
+  @ApiProperty({ example: 'FOR_SALE', description: '판매 상태' })
+  saleStatus: 'FOR_SALE' | 'RESERVED' | 'SOLD';
+
+  @ApiProperty({
+    example: 'https://rebook.s3.amazonaws.com/image.jpg',
+    description: '책 썸네일 이미지 (첫 장)',
+    nullable: true,
+  })
+  thumbnail?: string;
+}
 
 export class ChatListOpponentDto {
   @ApiProperty({ example: 2, description: '상대방 유저의 ID' })
@@ -41,11 +63,10 @@ export class ChatListItemDto {
   opponent: ChatListOpponentDto | null;
 
   @ApiProperty({
-    example: 'https://image.url/book.jpg',
-    description: '책 대표 이미지 URL',
+    description: '책 정보',
     nullable: true,
   })
-  bookImage: string | null;
+  book: BookSummaryDto;
 
   @ApiProperty({ example: 3, description: '읽지 않은 메시지 개수' })
   unreadCount: number;

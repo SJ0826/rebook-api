@@ -19,9 +19,16 @@ export class ChatService {
             order: {
               include: {
                 book: {
-                  include: {
+                  select: {
+                    id: true,
+                    title: true,
+                    price: true,
+                    saleStatus: true,
                     bookImage: {
                       take: 1,
+                      select: {
+                        imageUrl: true,
+                      },
                     },
                   },
                 },
@@ -62,6 +69,7 @@ export class ChatService {
 
         return {
           chatRoomId: Number(chatRoomId),
+          book: ucr.chatRoom.order.book,
           lastMessage: ucr.chatRoom.messages[0]?.content ?? null,
           lastMessageTime: ucr.chatRoom.messages[0]?.createdAt ?? null,
           opponent: ucr.chatRoom.UserChatRoom[0]?.user
@@ -71,7 +79,6 @@ export class ChatService {
                 imageUrl: ucr.chatRoom.UserChatRoom[0].user.imageUrl,
               }
             : null,
-          bookImage: ucr.chatRoom.order?.book?.bookImage[0]?.imageUrl ?? null,
           unreadCount,
         };
       }),
