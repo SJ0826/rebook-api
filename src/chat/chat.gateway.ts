@@ -84,12 +84,6 @@ export class ChatGateway
     @MessageBody() data: { chatRoomId: number },
   ) {
     await client.join(`chat-${data.chatRoomId}`);
-
-    // 기존 메세지를 불러와서 클라이언트에게 전송
-    const messages = await this.chatService.getMessages(
-      Number(data.chatRoomId),
-    );
-    client.emit('loadMessages', messages);
   }
 
   @SubscribeMessage('message')
@@ -98,7 +92,6 @@ export class ChatGateway
     @MessageBody() data: { chatRoomId: number; content: string },
   ) {
     const user = this.getUserFromSocket(client);
-    this.logger.debug(user, '여기야 여기');
     if (!user) {
       throw new WsException('인증된 사용자만 메시지를 보낼 수 있습니다.');
     }

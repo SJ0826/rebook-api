@@ -9,7 +9,6 @@ export class ChatService {
 
   // --------------------------------
   // 사용자의 채팅 목록 조회
-
   // --------------------------------
   async getChatList(userId: number) {
     const userChatRooms = await this.prisma.userChatRoom.findMany({
@@ -84,10 +83,19 @@ export class ChatService {
   // --------------------------------
   // 특정 채팅방의 메시지 조회
   // --------------------------------
-  async getMessages(chatRoomId: number) {
+  async getMessages(chatRoomId: number, take: number, before?: string) {
     return this.prisma.message.findMany({
-      where: { chatRoomId },
-      orderBy: { createdAt: 'asc' },
+      where: {
+        chatRoomId,
+        ...(before && {
+          createdAt: { lt: new Date(before) },
+        }),
+      },
+      orderBy: { createdAt: 'desc' },
+      take,
+      include: {
+        sender: true,
+      },
     });
   }
 
