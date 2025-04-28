@@ -37,8 +37,11 @@ export class ChatController {
     description: '사용자가 채팅 목록을 조회합니다.',
   })
   @ApiOkResponse({ type: [ChatListItemDto] })
-  async getChatList(@Req() req): Promise<ChatListItemDto[]> {
-    return this.chatService.getChatList(req.user.id);
+  async getChatList(
+    @Req() req,
+    @Query('bookId') bookId: number,
+  ): Promise<ChatListItemDto[]> {
+    return this.chatService.getChatList(req.user.id, bookId);
   }
 
   /**

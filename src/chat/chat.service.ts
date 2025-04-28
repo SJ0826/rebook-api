@@ -10,7 +10,7 @@ export class ChatService {
   // --------------------------------
   // 사용자의 채팅 목록 조회
   // --------------------------------
-  async getChatList(userId: number) {
+  async getChatList(userId: number, bookId?: number) {
     const userChatRooms = await this.prisma.userChatRoom.findMany({
       where: { userId },
       include: {
@@ -55,33 +55,38 @@ export class ChatService {
 
     // 🔢 안 읽은 메시지 개수 계산 추가
     const enriched = await Promise.all(
-      userChatRooms.map(async (ucr) => {
-        const chatRoomId = ucr.chatRoomId;
-        const lastReadAt = ucr.lastReadAt;
+      userChatRooms
+        .filter((ucr) => {
+          if (!bookId) return true;
+          return Number(ucr.chatRoom.order.book.id) == bookId;
+        })
+        .map(async (ucr) => {
+          const chatRoomId = ucr.chatRoomId;
+          const lastReadAt = ucr.lastReadAt;
 
-        const unreadCount = await this.prisma.message.count({
-          where: {
-            chatRoomId,
-            senderId: { not: userId },
-            createdAt: { gt: lastReadAt },
-          },
-        });
+          const unreadCount = await this.prisma.message.count({
+            where: {
+              chatRoomId,
+              senderId: { not: userId },
+              createdAt: { gt: lastReadAt },
+            },
+          });
 
-        return {
-          chatRoomId: Number(chatRoomId),
-          book: ucr.chatRoom.order.book,
-          lastMessage: ucr.chatRoom.messages[0]?.content ?? null,
-          lastMessageTime: ucr.chatRoom.messages[0]?.createdAt ?? null,
-          opponent: ucr.chatRoom.UserChatRoom[0]?.user
-            ? {
-                userId: Number(ucr.chatRoom.UserChatRoom[0].user.id),
-                name: ucr.chatRoom.UserChatRoom[0].user.name,
-                imageUrl: ucr.chatRoom.UserChatRoom[0].user.imageUrl,
-              }
-            : null,
-          unreadCount,
-        };
-      }),
+          return {
+            chatRoomId: Number(chatRoomId),
+            book: ucr.chatRoom.order.book,
+            lastMessage: ucr.chatRoom.messages[0]?.content ?? null,
+            lastMessageTime: ucr.chatRoom.messages[0]?.createdAt ?? null,
+            opponent: ucr.chatRoom.UserChatRoom[0]?.user
+              ? {
+                  userId: Number(ucr.chatRoom.UserChatRoom[0].user.id),
+                  name: ucr.chatRoom.UserChatRoom[0].user.name,
+                  imageUrl: ucr.chatRoom.UserChatRoom[0].user.imageUrl,
+                }
+              : null,
+            unreadCount,
+          };
+        }),
     );
 
     return enriched;
