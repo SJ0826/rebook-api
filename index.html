@@ -28,7 +28,7 @@
   let socket;
 
   function connectSocket() {
-    socket = io('ws://localhost:3000/chat', { transports: ['websocket'] });
+    socket = io('ws://localhost:3000/ws-chat', { transports: ['websocket'] });
 
     socket.on('connect', () => {
       document.getElementById('status').innerText = `연결됨 ✅ (ID: ${socket.id})`;

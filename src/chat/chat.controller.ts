@@ -1,12 +1,23 @@
-import { Controller, Get, Param, Patch, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ChatService } from './chat.service';
 import {
   ApiBearerAuth,
+  ApiOkResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { ChatListItemDto } from './dto/chat-list.dto';
+import { GetChatMessagesDto } from './dto/get-chat-messages.dto';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
@@ -18,6 +29,22 @@ export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   /**
+   * 사용자별 채팅방 목록 조회
+   */
+  @Get('/')
+  @ApiOperation({
+    summary: '채팅 목록 조회',
+    description: '사용자가 채팅 목록을 조회합니다.',
+  })
+  @ApiOkResponse({ type: [ChatListItemDto] })
+  async getChatList(
+    @Req() req,
+    @Query('bookId') bookId: number,
+  ): Promise<ChatListItemDto[]> {
+    return this.chatService.getChatList(req.user.id, bookId);
+  }
+
+  /**
    * 특정 채팅방의 기존 메세지 조회
    */
   @Get(':chatRoomId/messages')
@@ -25,8 +52,16 @@ export class ChatController {
     summary: '채팅 메시지 조회',
     description: '특정 채팅방의 기존 메시지를 조회합니다.',
   })
-  async getChatMessages(@Param('chatRoomId') chatRoomId: string) {
-    return this.chatService.getMessages(Number(chatRoomId));
+  async getChatMessages(
+    @Param('chatRoomId') chatRoomId: string,
+    @Query() query: GetChatMessagesDto,
+  ) {
+    const { take, before } = query;
+    return this.chatService.getMessages(
+      Number(chatRoomId),
+      Number(take),
+      before,
+    );
   }
 
   /**

@@ -167,6 +167,7 @@ export class AuthService {
 
     // 이메일, 비밀번호 검증
     if (!user || !(await bcrypt.compare(password, user.password))) {
+      this.logger.error(password, user?.password);
       throw new BadRequestException('이메일 또는 비밀번호가 잘못되었습니다');
     }
 
@@ -201,8 +202,7 @@ export class AuthService {
   // -----------------------------------------
   async refreshToken(refreshToken: string, response: Response) {
     const jwtConfig = this.config.get<JwtConfig>('jwt');
-    this.logger.debug('refreshToken', refreshToken);
-    // this.logger.debug('newRefreshToken', newRefreshToken);
+
     // 1. RefreshToken에서 userId 추출
     let payload: { userId: number };
     try {
@@ -218,7 +218,6 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.userId },
     });
-    this.logger.error('user.refreshToken', payload);
 
     if (
       !user ||

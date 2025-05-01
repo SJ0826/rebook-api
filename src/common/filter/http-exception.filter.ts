@@ -10,6 +10,16 @@ import { Request, Response } from 'express';
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: any, host: ArgumentsHost): any {
     const ctx = host.switchToHttp();
+    const req = ctx.getRequest<Request>();
+    // WebSocket 요청이라면 무시 (핸들링하지 않음)
+    // if (
+    //   host.getType() !== 'http' ||
+    //   req.url.startsWith('/ws-chat') ||
+    //   ctx.getRequest<Request>().url.includes('/socket.io/')
+    // ) {
+    //   return;
+    // }
+
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
     const status = exception.getStatus();
