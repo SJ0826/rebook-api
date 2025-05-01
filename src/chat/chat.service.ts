@@ -24,6 +24,7 @@ export class ChatService {
                     title: true,
                     price: true,
                     saleStatus: true,
+                    sellerId: true,
                     bookImage: {
                       take: 1,
                       select: {
