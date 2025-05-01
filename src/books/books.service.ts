@@ -319,6 +319,16 @@ export class BooksService {
       isFavorite = !!favorite;
     }
 
+    // 구매 진행 여부 확인
+    let isOrderRequested = false;
+    if (userId) {
+      const order = await this.prisma.order.findFirst({
+        where: {
+          buyerId: userId,
+        },
+      });
+      isOrderRequested = !!order;
+    }
     return {
       id: book.id,
       title: book.title,
@@ -339,6 +349,7 @@ export class BooksService {
         };
       }),
       isFavorite: isFavorite,
+      isOrderRequested: isOrderRequested,
       favoriteCount: book.favorites.length,
       orderCount: book.orders.length,
       createdAt: book.createdAt,
