@@ -90,7 +90,11 @@ export class ChatService {
         }),
     );
 
-    return enriched;
+    return enriched.sort(
+      (a, b) =>
+        new Date(b.lastMessageTime ?? 0).getTime() -
+        new Date(a.lastMessageTime ?? 0).getTime(),
+    );
   }
 
   // --------------------------------
