@@ -17,11 +17,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  console.log('📂 .env.development MAIL_FROM:', process.env.MAIL_FROM);
-  console.log(
-    '📂 .env.development MAIL_TOKEN_EXPIRY:',
-    process.env.MAIL_TOKEN_EXPIRY,
-  );
+  console.log('📂 .env MAIL_FROM:', process.env.MAIL_FROM);
+  console.log('📂 .env  MAIL_TOKEN_EXPIRY:', process.env.MAIL_TOKEN_EXPIRY);
   // cors error
   app.enableCors({
     origin: [

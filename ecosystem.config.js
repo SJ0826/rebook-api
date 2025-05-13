@@ -8,8 +8,12 @@ module.exports = {
       watch: false, // 코드 변경 감지 비활성화 (개발 모드에서는 true 가능)
       max_memory_restart: '300M', // 메모리 초과 시 재시작
       env: {
-        NODE_ENV: 'production', // 환경 변수 설정 (개발: development)
-        PORT: 3000,
+        // 💡 기본값 (개발 환경)
+        NODE_ENV: 'development',
+      },
+      env_production: {
+        // 💡 --env production 사용 시 적용 (운영 환경)
+        NODE_ENV: 'production',
       },
     },
   ],
