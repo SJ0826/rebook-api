@@ -23,7 +23,7 @@ import { validate } from './config/env.validation';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: `.env.production`,
+      envFilePath: `.env.${process.env.NODE_ENV}`,
       validate,
       load: [databaseConfig, jwtConfig, awsConfig, mailConfig, appConfig],
     }),
