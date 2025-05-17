@@ -14,7 +14,7 @@ async function bootstrap() {
     return int ?? this.toString();
   };
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { cors: true });
   const configService = app.get(ConfigService);
 
   // cors error
@@ -22,6 +22,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'http://localhost:3001',
+      'https://main.d2nh4o8zioz2s8.amplifyapp.com',
       'https://main.d2nh4o8zioz2s8.amplifyapp.com',
     ],
     credentials: true,
