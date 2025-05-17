@@ -14,45 +14,38 @@ async function bootstrap() {
     return int ?? this.toString();
   };
 
-  const app = await NestFactory.create(AppModule, { cors: true });
-  const configService = app.get(ConfigService);
+  const app = await NestFactory.create(AppModule);
 
-  console.log('✅ DATABASE_URL:', process.env.DATABASE_URL);
-
-  // cors error
   app.enableCors({
     origin: [
       'http://localhost:3000',
       'http://localhost:3001',
-      'https://main.d2nh4o8zioz2s8.amplifyapp.com',
       'https://main.d2nh4o8zioz2s8.amplifyapp.com',
     ],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
+
   app.use(cookieParser());
 
-  // swagger setting
-  const config = new DocumentBuilder()
+  const configService = app.get(ConfigService);
+  console.log('✅ DATABASE_URL:', process.env.DATABASE_URL);
+
+  // Swagger 설정
+  const swaggerConfig = new DocumentBuilder()
     .setTitle('Rebook API')
     .setDescription('The Rebook API description')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, documentFactory);
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, swaggerDocument);
 
-  // global interceptor
+  // 전역 인터셉터, 필터, 파이프, WebSocket 어댑터
   app.useGlobalInterceptors(new ResponseInterceptor());
-
-  // global http exception filter
   app.useGlobalFilters(new HttpExceptionFilter());
-
-  // global pips
   app.useGlobalPipes(new ValidationPipe());
-
-  // ws adapter
   app.useWebSocketAdapter(new SocketIoAdapter(app, configService));
 
   await app.listen(configService.get('PORT') ?? 3000);
