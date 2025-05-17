@@ -19,12 +19,13 @@ async function bootstrap() {
 
   console.log('📂 .env MAIL_FROM:', process.env.MAIL_FROM);
   console.log('📂 .env  MAIL_TOKEN_EXPIRY:', process.env.MAIL_TOKEN_EXPIRY);
+  console.log('CLIENT_URL:', configService.get('CLIENT_URL'));
   // cors error
   app.enableCors({
     origin: [
       'http://localhost:3000',
       'http://localhost:3001',
-      configService.get('CLIENT_URL'),
+      'https://main.d2nh4o8zioz2s8.amplifyapp.com',
     ],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
