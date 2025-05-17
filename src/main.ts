@@ -24,7 +24,8 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'http://localhost:3001',
-      this.configService.get('CLIENT_URL'),
+      'https://main.d2nh4o8zioz2s8.amplifyapp.com',
+      'https://main.d2nh4o8zioz2s8.amplifyapp.com',
     ],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
