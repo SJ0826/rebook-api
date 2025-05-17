@@ -17,6 +17,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: true });
   const configService = app.get(ConfigService);
 
+  console.log('✅ DATABASE_URL:', process.env.DATABASE_URL);
+
   // cors error
   app.enableCors({
     origin: [
