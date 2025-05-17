@@ -18,7 +18,7 @@ import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({
   cors: {
-    origin: 'http://localhost:3000',
+    origin: '',
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -37,12 +37,24 @@ export class ChatGateway
     private readonly chatService: ChatService,
     private readonly config: ConfigService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {
     console.log('✅ WebSocket Gateway 실행됨! 🚀');
   }
 
-  afterInit() {
+  afterInit(server: Server) {
     this.logger.debug('웹소켓 서버 초기화 ✅');
+    this.server = server;
+
+    const allowedOrigin = this.configService.get('CLIENT_URL');
+
+    // 동적으로 CORS 설정 변경
+    server.engine.opts.cors = {
+      origin: allowedOrigin,
+      methods: ['GET', 'POST'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true,
+    };
   }
 
   handleDisconnect(client: Socket) {

@@ -17,9 +17,6 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  console.log('📂 .env MAIL_FROM:', process.env.MAIL_FROM);
-  console.log('📂 .env  MAIL_TOKEN_EXPIRY:', process.env.MAIL_TOKEN_EXPIRY);
-  console.log('CLIENT_URL:', configService.get('CLIENT_URL'));
   // cors error
   app.enableCors({
     origin: [
@@ -29,6 +26,7 @@ async function bootstrap() {
     ],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
   app.use(cookieParser());
 
