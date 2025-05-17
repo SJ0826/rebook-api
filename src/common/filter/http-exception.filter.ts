@@ -27,6 +27,18 @@ export class HttpExceptionFilter implements ExceptionFilter {
       | string
       | { statusCode: number; error: string; message: string | string[] };
 
+    //  CORS 헤더 추가
+    response.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    response.header('Access-Control-Allow-Credentials', 'true');
+    response.header(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization',
+    );
+    response.header(
+      'Access-Control-Allow-Methods',
+      'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+    );
+
     if (typeof error === 'string') {
       response.status(status).json({
         success: false,
