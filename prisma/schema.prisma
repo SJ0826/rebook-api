@@ -7,24 +7,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ======================
+//        MODELS
+// ======================
+
 model User {
-  id               BigInt         @id @default(autoincrement())
-  email            String         @unique @db.VarChar(255)
-  password         String         @db.VarChar(100)
-  name             String         @db.VarChar(50)
-  imageUrl         String?        @map("image_url")
-  createdAt        DateTime       @default(now()) @map("created_at")
-  refreshToken     String?        @map("refresh_token") @db.VarChar(255)
-  emailToken       String?        @map("email_token")
-  emailTokenExpiry DateTime?      @map("email_token_expiry")
-  emailVerified    Boolean        @default(false) @map("email_verified")
-  isActive         Boolean        @default(true) @map("is_active")
-  books            Book[]         @relation("UserBooks")
-  favorites        Favorite[]
-  Message          Message[]
-  buyerOrders      Order[]        @relation("BuyerOrders")
-  sellerOrders     Order[]        @relation("SellerOrders")
-  UserChatRoom     UserChatRoom[]
+  id               BigInt    @id @default(autoincrement())
+  email            String    @unique @db.VarChar(255)
+  password         String    @db.VarChar(100)
+  name             String    @db.VarChar(50)
+  imageUrl         String?   @map("image_url")
+  refreshToken     String?   @map("refresh_token") @db.VarChar(255)
+  emailToken       String?   @map("email_token")
+  emailTokenExpiry DateTime? @map("email_token_expiry")
+  emailVerified    Boolean   @default(false) @map("email_verified")
+  isActive         Boolean   @default(true) @map("is_active")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  books        Book[]         @relation("UserBooks")
+  favorites    Favorite[]
+  Message      Message[]
+  buyerOrders  Order[]        @relation("BuyerOrders")
+  sellerOrders Order[]        @relation("SellerOrders")
+  UserChatRoom UserChatRoom[]
 }
 
 model Book {
@@ -38,10 +44,12 @@ model Book {
   createdAt   DateTime       @default(now()) @map("created_at")
   sellerId    BigInt         @map("seller_id")
   saleStatus  BookSaleStatus @default(FOR_SALE) @map("sale_status")
-  seller      User           @relation("UserBooks", fields: [sellerId], references: [id])
-  bookImage   BookImage[]
-  favorites   Favorite[]
-  orders      Order[]
+
+  // Relations
+  seller    User        @relation("UserBooks", fields: [sellerId], references: [id])
+  bookImage BookImage[]
+  favorites Favorite[]
+  orders    Order[]
 
   @@index([title(ops: raw("gin_trgm_ops"))], type: Gin)
   @@index([author(ops: raw("gin_trgm_ops"))], type: Gin)
@@ -53,7 +61,9 @@ model BookImage {
   imageUrl String  @map("image_url") @db.VarChar(255)
   uuid     String  @unique @db.VarChar
   sort     Int?
-  book     Book?   @relation(fields: [bookId], references: [id])
+
+  // Relations
+  book Book? @relation(fields: [bookId], references: [id])
 }
 
 model Order {
@@ -63,16 +73,20 @@ model Order {
   sellerId  BigInt
   createdAt DateTime    @default(now())
   status    OrderStatus @default(PENDING)
-  chatRoom  ChatRoom?
-  book      Book        @relation(fields: [bookId], references: [id])
-  buyer     User        @relation("BuyerOrders", fields: [buyerId], references: [id])
-  seller    User        @relation("SellerOrders", fields: [sellerId], references: [id])
+
+  // Relations
+  book     Book      @relation(fields: [bookId], references: [id])
+  buyer    User      @relation("BuyerOrders", fields: [buyerId], references: [id])
+  seller   User      @relation("SellerOrders", fields: [sellerId], references: [id])
+  chatRoom ChatRoom?
 }
 
 model ChatRoom {
-  id           BigInt         @id @default(autoincrement())
-  orderId      BigInt         @unique @map("order_id")
-  createdAt    DateTime       @default(now()) @map("created_at")
+  id        BigInt   @id @default(autoincrement())
+  orderId   BigInt   @unique @map("order_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
   order        Order          @relation(fields: [orderId], references: [id])
   messages     Message[]
   UserChatRoom UserChatRoom[]
@@ -84,8 +98,10 @@ model Message {
   content    String
   createdAt  DateTime @default(now()) @map("created_at")
   chatRoomId BigInt   @map("chat_room_id")
-  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id])
-  sender     User     @relation(fields: [senderId], references: [id])
+
+  // Relations
+  chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id])
+  sender   User     @relation(fields: [senderId], references: [id])
 }
 
 model UserChatRoom {
@@ -93,8 +109,10 @@ model UserChatRoom {
   userId     BigInt   @map("user_id")
   chatRoomId BigInt   @map("chat_room_id")
   lastReadAt DateTime @default(now()) @map("last_read_at")
-  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id])
-  user       User     @relation(fields: [userId], references: [id])
+
+  // Relations
+  chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, chatRoomId])
 }
@@ -104,9 +122,15 @@ model Favorite {
   createdAt DateTime @default(now())
   bookId    BigInt   @map("book_id")
   userId    BigInt   @map("user_id")
-  book      Book     @relation(fields: [bookId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+
+  // Relations
+  book Book @relation(fields: [bookId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 }
+
+// ======================
+//         ENUMS
+// ======================
 
 enum BookStatus {
   NEW
