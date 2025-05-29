@@ -14,8 +14,6 @@
 - AWS S3 이미지 업로드
 - 관리자용 Swagger API 문서 자동 생성
 
----
-
 ## 🧱 기술 스택
 
 **백엔드 프레임워크**: NestJS (v11)  
@@ -27,19 +25,13 @@
 **기타 도구**: dotenv, cookie-parser, cors, nodemailer 등  
 **스타일링 및 린팅**: ESLint, Prettier
 
----
-
 ## 🔗 데모 링크
 
 📦 [👉 ReBook 중고책 거래 서비스 바로가기](https://main.d2nh4o8zioz2s8.amplifyapp.com/)
 
----
-
 ## ◾ DataBase ERD
 
 ![img_3.png](/src/public/images/erd.png)
-
----
 
 ## 📁 주요 폴더 구조
 
