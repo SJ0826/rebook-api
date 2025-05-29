@@ -22,6 +22,7 @@
 **인증**: JWT, Passport  
 **파일 업로드**: AWS S3, multer, sharp  
 **실시간 기능**: WebSocket (Socket.IO) 기반 채팅  
+**배포**: EC2 (Backend), Amplify (Frontend), S3, CloudFront  
 **기타 도구**: dotenv, cookie-parser, cors, nodemailer 등  
 **스타일링 및 린팅**: ESLint, Prettier
 
