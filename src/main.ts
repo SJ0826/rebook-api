@@ -30,7 +30,6 @@ async function bootstrap() {
   app.use(cookieParser());
 
   const configService = app.get(ConfigService);
-  console.log('✅ DATABASE_URL:', process.env.DATABASE_URL);
 
   // Swagger 설정
   const swaggerConfig = new DocumentBuilder()
