@@ -19,7 +19,7 @@ export class SocketIoAdapter extends IoAdapter {
 
     const partialOpts: Partial<ServerOptions> = {
       cors: {
-        origin: this.config.get('CLIENT_URL'),
+        // origin: this.config.get('CLIENT_URL'),
         credentials: true,
       },
     };
