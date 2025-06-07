@@ -18,7 +18,7 @@ import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({
   cors: {
-    cors: false,
+    origin: '',
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -44,9 +44,11 @@ export class ChatGateway
 
   afterInit(server: Server) {
     this.logger.debug('웹소켓 서버 초기화 ✅');
+    this.server = server;
 
     const allowedOrigin = this.configService.get('CLIENT_URL');
 
+    // 동적으로 CORS 설정 변경
     server.engine.opts.cors = {
       origin: allowedOrigin,
       methods: ['GET', 'POST'],
