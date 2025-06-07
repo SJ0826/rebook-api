@@ -18,10 +18,11 @@ export class SocketIoAdapter extends IoAdapter {
       typeof portOrServer === 'number' ? undefined : portOrServer;
 
     const partialOpts: Partial<ServerOptions> = {
-      // cors: {
-      //   origin: this.config.get('CLIENT_URL'),
-      //   credentials: true,
-      // },
+      cors: {
+        // origin: this.config.get('CLIENT_URL'),
+        origin: '*',
+        credentials: true,
+      },
     };
 
     return serverArg
