@@ -198,7 +198,7 @@ export class BooksService {
     filters?: {
       minPrice?: number;
       maxPrice?: number;
-      status?: BookStatus;
+      status?: BookStatus[];
       sort?: string;
       page?: number;
       limit?: number;
@@ -239,7 +239,9 @@ export class BooksService {
               : {},
             filters?.minPrice ? { price: { gte: filters.minPrice } } : {},
             filters?.maxPrice ? { price: { lte: filters.maxPrice } } : {},
-            filters?.status ? { status: filters.status } : {},
+            filters?.status && filters.status.length > 0
+              ? { status: { in: filters.status } }
+              : {},
             { saleStatus: BookSaleStatus.FOR_SALE },
           ],
         },
@@ -265,7 +267,9 @@ export class BooksService {
               : {},
             filters?.minPrice ? { price: { gte: filters.minPrice } } : {},
             filters?.maxPrice ? { price: { lte: filters.maxPrice } } : {},
-            filters?.status ? { status: filters.status } : {},
+            filters?.status && filters.status.length > 0
+              ? { status: { in: filters.status } }
+              : {},
             { saleStatus: BookSaleStatus.FOR_SALE },
           ],
         },

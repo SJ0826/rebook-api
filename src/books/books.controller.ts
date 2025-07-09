@@ -102,6 +102,7 @@ export class BooksController {
   @ApiQuery({
     name: 'status',
     required: false,
+    isArray: true,
     enum: BookStatus,
     description: '책 상태',
   })
@@ -125,15 +126,21 @@ export class BooksController {
     @Query('search') query?: string,
     @Query('minPrice') minPrice?: number,
     @Query('maxPrice') maxPrice?: number,
-    @Query('status') status?: BookStatus,
+    @Query('status') status?: BookStatus[],
     @Query('sort') sort?: string,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 8,
   ) {
+    // status를 항상 배열로 반환
+    let normalizedStatus: BookStatus[] | undefined;
+    if (status) {
+      normalizedStatus = Array.isArray(status) ? status : [status];
+    }
+
     return this.booksService.searchBooks(query, {
       minPrice,
       maxPrice,
-      status,
+      status: normalizedStatus,
       sort,
       page,
       limit,
