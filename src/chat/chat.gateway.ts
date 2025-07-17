@@ -46,11 +46,11 @@ export class ChatGateway
     this.logger.debug('웹소켓 서버 초기화 ✅');
     this.server = server;
 
-    const allowedOrigin = 'https://main.d2nh4o8zioz2s8.amplifyapp.com';
+    // const allowedOrigin = 'https://main.d2nh4o8zioz2s8.amplifyapp.com';
 
     // 동적으로 CORS 설정 변경
     server.engine.opts.cors = {
-      origin: allowedOrigin,
+      // origin: allowedOrigin,
       methods: ['GET', 'POST'],
       allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true,
