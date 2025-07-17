@@ -17,11 +17,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'https://rebook-v2.d2nh4o8zioz2s8.amplifyapp.com',
-      'https://main.d2nh4o8zioz2s8.amplifyapp.com',
-    ],
+    origin: false,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
