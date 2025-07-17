@@ -20,7 +20,7 @@ export class SocketIoAdapter extends IoAdapter {
     const partialOpts: Partial<ServerOptions> = {
       cors: {
         // origin: this.config.get('CLIENT_URL'),
-        origin: 'https://main.d2nh4o8zioz2s8.amplifyapp.com',
+        // origin: 'https://main.d2nh4o8zioz2s8.amplifyapp.com',
         credentials: true,
       },
     };
