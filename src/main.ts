@@ -16,23 +16,21 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
-  // app.enableCors({
-  //   origin: [
-  //     'http://localhost:3000',
-  //     'https://rebook-v2.d2nh4o8zioz2s8.amplifyapp.com',
-  //     'https://main.d2nh4o8zioz2s8.amplifyapp.com',
-  //   ],
-  //   credentials: true,
-  //   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  //   allowedHeaders: [
-  //     'Content-Type',
-  //     'Authorization',
-  //     'X-Requested-With',
-  //     'Accept',
-  //   ],
-  // });
-
-  // app.enableCors({ origin: false });
+  app.enableCors({
+    origin: [
+      'http://localhost:3000',
+      'https://rebook-v2.d2nh4o8zioz2s8.amplifyapp.com',
+      'https://main.d2nh4o8zioz2s8.amplifyapp.com',
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+    ],
+  });
 
   app.use(cookieParser());
 
