@@ -17,13 +17,13 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({
-  cors: {
-    origin: '',
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-  },
-  credentials: true,
+  // cors: {
+  //   origin: '',
+  //   methods: ['GET', 'POST'],
+  //   allowedHeaders: ['Content-Type', 'Authorization'],
+  //   credentials: true,
+  // },
+  // credentials: true,
 })
 export class ChatGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
@@ -49,12 +49,12 @@ export class ChatGateway
     // const allowedOrigin = 'https://main.d2nh4o8zioz2s8.amplifyapp.com';
 
     // 동적으로 CORS 설정 변경
-    server.engine.opts.cors = {
-      // origin: allowedOrigin,
-      methods: ['GET', 'POST'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-      credentials: true,
-    };
+    // server.engine.opts.cors = {
+    //   // origin: allowedOrigin,
+    //   methods: ['GET', 'POST'],
+    //   allowedHeaders: ['Content-Type', 'Authorization'],
+    //   credentials: true,
+    // };
   }
 
   handleDisconnect(client: Socket) {
