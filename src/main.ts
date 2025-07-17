@@ -32,7 +32,7 @@ async function bootstrap() {
   //   ],
   // });
 
-  app.enableCors({ origin: false });
+  // app.enableCors({ origin: false });
 
   app.use(cookieParser());
 
