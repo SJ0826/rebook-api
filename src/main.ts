@@ -18,7 +18,7 @@ async function bootstrap() {
 
   app.enableCors({
     origin: [
-      // github actions test 3
+      // github actions test 4
       'http://localhost:3000',
       'https://rebook-v2.d2nh4o8zioz2s8.amplifyapp.com',
       'https://main.d2nh4o8zioz2s8.amplifyapp.com',
