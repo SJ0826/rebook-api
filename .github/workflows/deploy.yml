@@ -40,11 +40,16 @@ jobs:
           
             echo "🚀 Starting deployment..."
           
+            # Node.js 20 사용 확인
+            source ~/.bashrc
+            nvm use 20 || echo "Warning: nvm not available"
+          
             # 애플리케이션 디렉토리로 이동
             cd /home/ubuntu/rebook-api
           
             # Node.js 버전 확인
-            node --version
+            echo "Node.js version: $(node --version)"
+            echo "NPM version: $(npm --version)"
           
             # Git에서 최신 코드 pull
             git pull origin main
