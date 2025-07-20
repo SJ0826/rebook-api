@@ -24,7 +24,7 @@ async function bootstrap() {
       'https://main.d2nh4o8zioz2s8.amplifyapp.com',
     ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Content-Type',
       'Authorization',
