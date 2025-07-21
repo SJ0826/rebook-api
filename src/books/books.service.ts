@@ -194,7 +194,7 @@ export class BooksService {
   // 책 검색 (Search) + 페이지네이션
   // -----------------------------------
   async searchBooks(
-    query?: string,
+    searchQuery?: string,
     filters?: {
       minPrice?: number;
       maxPrice?: number;
@@ -205,7 +205,6 @@ export class BooksService {
     },
   ) {
     let orderBy;
-
     switch (filters?.sort) {
       case 'oldest':
         orderBy = { createdAt: 'asc' };
@@ -229,11 +228,11 @@ export class BooksService {
       this.prisma.book.findMany({
         where: {
           AND: [
-            query
+            searchQuery
               ? {
                   OR: [
-                    { title: { contains: query, mode: 'insensitive' } },
-                    { author: { contains: query, mode: 'insensitive' } },
+                    { title: { contains: searchQuery, mode: 'insensitive' } },
+                    { author: { contains: searchQuery, mode: 'insensitive' } },
                   ],
                 }
               : {},
@@ -257,11 +256,11 @@ export class BooksService {
       this.prisma.book.count({
         where: {
           AND: [
-            query
+            searchQuery
               ? {
                   OR: [
-                    { title: { contains: query, mode: 'insensitive' } },
-                    { author: { contains: query, mode: 'insensitive' } },
+                    { title: { contains: searchQuery, mode: 'insensitive' } },
+                    { author: { contains: searchQuery, mode: 'insensitive' } },
                   ],
                 }
               : {},

@@ -123,7 +123,7 @@ export class BooksController {
     description: '한 페이지에 보여줄 개수 (기본값: 8)',
   })
   searchBooks(
-    @Query('search') query?: string,
+    @Query('searchQuery') searchQuery?: string,
     @Query('minPrice') minPrice?: number,
     @Query('maxPrice') maxPrice?: number,
     @Query('status') status?: BookStatus[],
@@ -137,7 +137,7 @@ export class BooksController {
       normalizedStatus = Array.isArray(status) ? status : [status];
     }
 
-    return this.booksService.searchBooks(query, {
+    return this.booksService.searchBooks(searchQuery, {
       minPrice,
       maxPrice,
       status: normalizedStatus,
