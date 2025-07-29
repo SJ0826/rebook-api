@@ -111,6 +111,7 @@ export class AuthController {
 
   @Patch('change-password')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   async changePassword(@Req() req, @Body() dto: ChangePasswordDto) {
     return await this.authService.changePassword(req.user.id, dto);
   }
