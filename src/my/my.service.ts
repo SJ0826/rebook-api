@@ -315,4 +315,47 @@ export class MyService {
       })),
     };
   }
+
+  // ------------------------
+  // 내 서점 요약 정보 조회
+  // ------------------------
+  async getMyBookStoreSummary(userId: number) {
+    const [sellingBooksCount, buyingBooksCount, favoriteBooksCount] =
+      await this.prisma.$transaction([
+        // 판매중인 책 개수
+        this.prisma.book.count({
+          where: {
+            sellerId: userId,
+          },
+        }),
+
+        // 구매중인 책 개수 (주문한 책)
+        this.prisma.book.count({
+          where: {
+            orders: {
+              some: {
+                buyerId: userId,
+              },
+            },
+          },
+        }),
+
+        // 좋아요한 책 개수
+        this.prisma.book.count({
+          where: {
+            favorites: {
+              some: {
+                userId: userId,
+              },
+            },
+          },
+        }),
+      ]);
+
+    return {
+      sellingBooksCount,
+      buyingBooksCount,
+      favoriteBooksCount,
+    };
+  }
 }

@@ -172,4 +172,40 @@ export class MyController {
   findAllFavoriteBooks(@Req() req, @Query() query: GetSellingBooksQueryDto) {
     return this.myService.getFavoriteBooks(req.user.id, query);
   }
+
+  // 내 서점 요약 정보 조회
+  @Get('summary')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: '내 서점 요약 정보 조회',
+    description: '판매중인 책, 구매중인 책, 좋아요한 책의 개수를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '서점 요약 정보 조회 성공',
+    schema: {
+      type: 'object',
+      properties: {
+        sellingBooksCount: {
+          type: 'number',
+          description: '판매중인 책 개수',
+          example: 5,
+        },
+        buyingBooksCount: {
+          type: 'number',
+          description: '구매중인 책 개수',
+          example: 3,
+        },
+        favoriteBooksCount: {
+          type: 'number',
+          description: '좋아요한 책 개수',
+          example: 12,
+        },
+      },
+    },
+  })
+  @ApiBearerAuth()
+  async getMyBookStoreSummary(@Req() req) {
+    return this.myService.getMyBookStoreSummary(Number(req.user.id));
+  }
 }
