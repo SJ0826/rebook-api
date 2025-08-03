@@ -165,7 +165,6 @@ export class BooksController {
     description: '책을 찾을 수 없음',
   })
   getBookDetail(@Param('id') id: number, @Req() req) {
-    console.log(req.user);
     const userId = req.user?.id;
     return this.booksService.getBookDetail(id, userId);
   }

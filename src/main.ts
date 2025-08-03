@@ -7,18 +7,26 @@ import { ResponseInterceptor } from './common/interceptor/response.interceptor';
 import { HttpExceptionFilter } from './common/filter/http-exception.filter';
 import { ConfigService } from '@nestjs/config';
 import { SocketIoAdapter } from './common/adapters/ws.adapter';
+import { CustomLogger } from './common/logger/custom.logger';
 
 async function bootstrap() {
+  const customLogger = new CustomLogger();
+
   BigInt.prototype.toJSON = function () {
     const int = Number.parseInt(this.toString());
     return int ?? this.toString();
   };
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    // 시스템 로그 레벨 조정 (라우트 매핑 로그 숨기기)
+    logger:
+      process.env.NODE_ENV === 'production'
+        ? ['error', 'warn']
+        : ['error', 'warn', 'log'],
+  });
 
   app.enableCors({
     origin: [
-      // github actions test 4
       'http://localhost:3000',
       'https://rebook-v2.d2nh4o8zioz2s8.amplifyapp.com',
       'https://main.d2nh4o8zioz2s8.amplifyapp.com',
@@ -34,6 +42,8 @@ async function bootstrap() {
   });
 
   app.use(cookieParser());
+
+  app.useLogger(customLogger);
 
   const configService = app.get(ConfigService);
 
