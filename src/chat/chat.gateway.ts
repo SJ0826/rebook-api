@@ -18,7 +18,7 @@ import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({
   cors: {
-    origin: '',
+    origin: 'https://rebook-v2.d2nh4o8zioz2s8.amplifyapp.com',
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
