@@ -28,7 +28,7 @@
 
 ## 🔗 데모 링크
 
-📦 [👉 ReBook 중고책 거래 서비스 바로가기](https://main.d2nh4o8zioz2s8.amplifyapp.com/)
+📦 [👉 ReBook 중고책 거래 서비스 바로가기](https://rebook-v2.d2nh4o8zioz2s8.amplifyapp.com/)
 
 ## ◾ DataBase ERD
 
