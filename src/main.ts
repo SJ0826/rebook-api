@@ -35,7 +35,7 @@ async function bootstrap() {
         'https://main.d2nh4o8zioz2s8.amplifyapp.com',
         'https://www.rebook.p-e.kr',
         'https://rebook.p-e.kr',
-        'https://rebook-5ujpfk75r-sj0826s-projects.vercel.app', // vercel
+        'https://rebook-ba3urst53-sj0826s-projects.vercel.app', // vercel
       ];
 
       if (!origin || allowedOrigins.includes(origin)) {
