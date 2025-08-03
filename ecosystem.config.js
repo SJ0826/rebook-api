@@ -15,12 +15,18 @@ module.exports = {
       log_date_format: 'YYYY-MM-DD HH:mm Z',
 
       env: {
-        // 💡 기본값 (개발 환경)
+        // 기본값 (개발 환경)
         NODE_ENV: 'development',
+        LOG_LEVEL: 'debug',
+        DISABLE_NEST_LOGS: 'false',
+        PORT: 3000,
       },
       env_production: {
-        // 💡 --env production 사용 시 적용 (운영 환경)
+        // 운영 환경 설정
         NODE_ENV: 'production',
+        LOG_LEVEL: 'info',
+        DISABLE_NEST_LOGS: 'true', //  NestJS 시스템 로그 비활성화
+        PORT: 3000,
       },
     },
   ],
