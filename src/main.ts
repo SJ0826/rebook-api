@@ -26,11 +26,22 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'https://rebook-v2.d2nh4o8zioz2s8.amplifyapp.com',
-      'https://main.d2nh4o8zioz2s8.amplifyapp.com',
-    ],
+    origin: (origin, callback) => {
+      console.log('🔍 CORS Origin:', origin);
+
+      const allowedOrigins = [
+        'http://localhost:3000',
+        'https://rebook-v2.d2nh4o8zioz2s8.amplifyapp.com',
+        'https://main.d2nh4o8zioz2s8.amplifyapp.com',
+      ];
+
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log('❌ CORS Blocked for origin:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
@@ -38,7 +49,9 @@ async function bootstrap() {
       'Authorization',
       'X-Requested-With',
       'Accept',
+      'Origin',
     ],
+    exposedHeaders: ['Set-Cookie'],
   });
 
   app.use(cookieParser());
