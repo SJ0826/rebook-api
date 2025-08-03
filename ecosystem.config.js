@@ -19,13 +19,13 @@ module.exports = {
         NODE_ENV: 'production', // 기본값을 production으로
         LOG_LEVEL: 'info',
         DISABLE_NEST_LOGS: 'true', // 시스템 로그 비활성화
-        PORT: 3000,
+        PORT: 4000,
       },
       env_development: {
         NODE_ENV: 'development',
         LOG_LEVEL: 'debug',
         DISABLE_NEST_LOGS: 'false',
-        PORT: 3000,
+        PORT: 4000,
       },
     },
   ],
