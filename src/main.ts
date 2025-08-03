@@ -33,6 +33,8 @@ async function bootstrap() {
         'http://localhost:3000',
         'https://rebook-v2.d2nh4o8zioz2s8.amplifyapp.com',
         'https://main.d2nh4o8zioz2s8.amplifyapp.com',
+        'https://www.rebook.p-e.kr',
+        'https://rebook.p-e.kr',
       ];
 
       if (!origin || allowedOrigins.includes(origin)) {
