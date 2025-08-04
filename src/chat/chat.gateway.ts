@@ -17,12 +17,6 @@ import { JwtService } from '@nestjs/jwt';
 import { CustomLogger } from '../common/logger/custom.logger';
 
 @WebSocketGateway({
-  // cors: {
-  //   origin: 'https://rebook-v2.d2nh4o8zioz2s8.amplifyapp.com',
-  //   methods: ['GET', 'POST'],
-  //   allowedHeaders: ['Content-Type', 'Authorization'],
-  //   credentials: true,
-  // },
   credentials: true,
 })
 export class ChatGateway
@@ -41,32 +35,17 @@ export class ChatGateway
   ) {
     this.logger = new CustomLogger();
     this.logger.log('✅ WebSocket Gateway 실행됨! 🚀', 'ChatGateway');
-
-    console.log('✅ WebSocket Gateway 실행됨! 🚀');
   }
 
   afterInit(server: Server) {
     this.logger.debug('웹소켓 서버 초기화 ✅');
     this.server = server;
-
-    // const allowedOrigin = 'https://rebook-v2.d2nh4o8zioz2s8.amplifyapp.com';
-
-    // 동적으로 CORS 설정 변경
-    // server.engine.opts.cors = {
-    //   origin: allowedOrigin,
-    //   methods: ['GET', 'POST'],
-    //   allowedHeaders: ['Content-Type', 'Authorization'],
-    //   credentials: true,
-    // };
   }
 
   handleDisconnect(client: Socket) {
-    this.logger.debug(` is discsonnected...`);
+    this.logger.debug(`${client.id} is disconnected...`);
   }
 
-  /**
-   * 인증
-   */
   handleConnection(client: Socket) {
     this.logger.log(`🚪 소켓 연결 시도: ${client.id}`);
     this.logger.log(`🌐 Origin: ${client.handshake.headers.origin}`);
@@ -74,14 +53,8 @@ export class ChatGateway
     const token = client.handshake.auth?.token;
     const jwtSecret = this.config.get('JWT_SECRET');
 
-    // 🔍 디버깅 로그 추가
     this.logger.log(`🔑 토큰 존재: ${!!token}`);
     this.logger.log(`🔐 JWT_SECRET 존재: ${!!jwtSecret}`);
-    this.logger.log(`🔐 JWT_SECRET 길이: ${jwtSecret?.length || 0}`);
-
-    if (token) {
-      this.logger.log(`🎫 토큰 앞 10자리: ${token.substring(0, 10)}...`);
-    }
 
     if (!token) {
       this.logger.warn(`❌ 토큰 없음, 연결 종료: ${client.id}`);
@@ -104,8 +77,13 @@ export class ChatGateway
         secret: jwtSecret,
       });
 
-      client.data.user = payload;
+      // ✅ 수정: client.data에 전체 payload와 간단한 user 객체 저장
+      client.data.user = {
+        id: payload.userId,
+        // 필요한 다른 사용자 정보도 여기에 추가 가능
+      };
       client.data.authenticated = true;
+      client.data.payload = payload; // 전체 payload도 저장
 
       this.logger.log(`✅ 인증 성공: ${client.id}`);
       this.logger.log(`👤 사용자 ID: ${payload.userId}`);
@@ -113,27 +91,23 @@ export class ChatGateway
         `⏰ 토큰 만료시간: ${new Date(payload.exp * 1000).toISOString()}`,
       );
 
-      // 인증 성공 알림
       client.emit('authenticated', { userId: payload.userId });
     } catch (err) {
       this.logger.error(`❌ 인증 실패: ${client.id}`);
       this.logger.error(`💥 에러 메시지: ${err.message}`);
-      this.logger.error(`📋 에러 스택: ${err.stack}`);
 
       client.emit('error', { message: '유효하지 않은 토큰입니다.' });
       client.disconnect(true);
     }
   }
 
-  /**
-   * 채팅방 입장 (joinRoom)
-   */
   @SubscribeMessage('joinRoom')
   async handleJoinRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { chatRoomId: number },
   ) {
     await client.join(`chat-${data.chatRoomId}`);
+    this.logger.log(`👥 방 입장: ${client.id} -> chat-${data.chatRoomId}`);
   }
 
   @SubscribeMessage('message')
@@ -142,24 +116,57 @@ export class ChatGateway
     @MessageBody() data: { chatRoomId: number; content: string },
   ) {
     const user = this.getUserFromSocket(client);
+
+    // ✅ 디버깅 로그 추가
+    this.logger.log(`📨 메시지 전송 시도: ${client.id}`);
+    this.logger.log(`👤 인증된 사용자: ${JSON.stringify(user)}`);
+    this.logger.log(`🔒 인증 상태: ${client.data.authenticated}`);
+
     if (!user) {
+      this.logger.error(
+        `❌ 인증되지 않은 사용자의 메시지 전송 시도: ${client.id}`,
+      );
       throw new WsException('인증된 사용자만 메시지를 보낼 수 있습니다.');
     }
-    const message = await this.chatService.saveMessage({
-      chatRoomId: data.chatRoomId,
-      content: data.content,
-      senderId: user.id,
-    });
 
-    this.server.to(`chat-${data.chatRoomId}`).emit('newMessage', message);
+    try {
+      const message = await this.chatService.saveMessage({
+        chatRoomId: data.chatRoomId,
+        content: data.content,
+        senderId: user.id,
+      });
+
+      this.server.to(`chat-${data.chatRoomId}`).emit('newMessage', message);
+      this.logger.log(`✅ 메시지 전송 성공: ${client.id}`);
+    } catch (error) {
+      this.logger.error(`❌ 메시지 저장 실패: ${error.message}`);
+      throw new WsException('메시지 전송에 실패했습니다.');
+    }
   }
 
+  // ✅ 수정: client.data에서 사용자 정보를 가져오도록 변경
   getUserFromSocket(client: Socket): { id: number } | null {
     try {
-      const token = client.handshake.auth.token;
-      const payload = this.jwtService.verify(token);
+      // 이미 handleConnection에서 인증된 사용자 정보 사용
+      if (client.data.authenticated && client.data.user) {
+        return client.data.user;
+      }
+
+      // 백업: client.data에 정보가 없다면 토큰을 다시 검증
+      const token = client.handshake.auth?.token;
+      if (!token) {
+        this.logger.warn(`⚠️  토큰 없음: ${client.id}`);
+        return null;
+      }
+
+      const jwtSecret = this.config.get('JWT_SECRET');
+      const payload = this.jwtService.verify(token, {
+        secret: jwtSecret, // ✅ 수정: secret 명시적 전달
+      });
+
       return { id: payload.userId };
-    } catch (e) {
+    } catch (error) {
+      this.logger.error(`❌ 사용자 인증 확인 실패: ${error.message}`);
       return null;
     }
   }
