@@ -12,9 +12,9 @@ import {
 import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChatService } from './chat.service';
-import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 @WebSocketGateway({
   // cors: {
@@ -30,7 +30,7 @@ export class ChatGateway
 {
   @WebSocketServer() server: Server;
 
-  private readonly logger: Logger = new Logger(ChatGateway.name);
+  private readonly logger: CustomLogger;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -39,6 +39,8 @@ export class ChatGateway
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {
+    this.logger.log('✅ WebSocket Gateway 실행됨! 🚀', 'ChatGateway');
+
     console.log('✅ WebSocket Gateway 실행됨! 🚀');
   }
 
