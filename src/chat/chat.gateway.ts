@@ -39,6 +39,7 @@ export class ChatGateway
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {
+    this.logger = new CustomLogger();
     this.logger.log('✅ WebSocket Gateway 실행됨! 🚀', 'ChatGateway');
 
     console.log('✅ WebSocket Gateway 실행됨! 🚀');

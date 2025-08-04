@@ -74,9 +74,10 @@ export class CustomLogger implements LoggerService {
       message.includes(pattern),
     );
 
-    const shouldSkipByContext = context && skipContexts.includes(context);
+    const shouldSkipByContext = context
+      ? skipContexts.includes(context)
+      : false;
 
-    if (!shouldSkipByContext) return true;
     return shouldSkipByMessage || shouldSkipByContext;
   }
 }
