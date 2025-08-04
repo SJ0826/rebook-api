@@ -65,25 +65,60 @@ export class ChatGateway
    * 인증
    */
   handleConnection(client: Socket) {
-    this.logger.log('🚪 소켓 연결 시도됨');
+    this.logger.log(`🚪 소켓 연결 시도: ${client.id}`);
+    this.logger.log(`🌐 Origin: ${client.handshake.headers.origin}`);
+
     const token = client.handshake.auth?.token;
+    const jwtSecret = this.config.get('JWT_SECRET');
+
+    // 🔍 디버깅 로그 추가
+    this.logger.log(`🔑 토큰 존재: ${!!token}`);
+    this.logger.log(`🔐 JWT_SECRET 존재: ${!!jwtSecret}`);
+    this.logger.log(`🔐 JWT_SECRET 길이: ${jwtSecret?.length || 0}`);
+
+    if (token) {
+      this.logger.log(`🎫 토큰 앞 10자리: ${token.substring(0, 10)}...`);
+    }
 
     if (!token) {
-      this.logger.warn('❌ 토큰 없음, 연결 종료');
-      client.disconnect();
+      this.logger.warn(`❌ 토큰 없음, 연결 종료: ${client.id}`);
+      client.emit('error', { message: '인증 토큰이 필요합니다.' });
+      client.disconnect(true);
+      return;
+    }
+
+    if (!jwtSecret) {
+      this.logger.error(`❌ JWT_SECRET 환경변수 없음!`);
+      client.emit('error', { message: '서버 설정 오류입니다.' });
+      client.disconnect(true);
       return;
     }
 
     try {
-      const payload = this.jwtService.verify(
-        token,
-        this.config.get('JWT_SECRET'),
-      );
+      this.logger.log(`🔍 JWT 검증 시작...`);
+
+      const payload = this.jwtService.verify(token, {
+        secret: jwtSecret,
+      });
+
       client.data.user = payload;
-      this.logger.log(`✅ 인증 성공: ${JSON.stringify(payload)}`);
+      client.data.authenticated = true;
+
+      this.logger.log(`✅ 인증 성공: ${client.id}`);
+      this.logger.log(`👤 사용자 ID: ${payload.userId}`);
+      this.logger.log(
+        `⏰ 토큰 만료시간: ${new Date(payload.exp * 1000).toISOString()}`,
+      );
+
+      // 인증 성공 알림
+      client.emit('authenticated', { userId: payload.userId });
     } catch (err) {
-      this.logger.error(`❌ 인증 실패: ${err.message}`);
-      client.disconnect();
+      this.logger.error(`❌ 인증 실패: ${client.id}`);
+      this.logger.error(`💥 에러 메시지: ${err.message}`);
+      this.logger.error(`📋 에러 스택: ${err.stack}`);
+
+      client.emit('error', { message: '유효하지 않은 토큰입니다.' });
+      client.disconnect(true);
     }
   }
 
