@@ -14,14 +14,16 @@ export class SocketIoAdapter extends IoAdapter {
   }
 
   createIOServer(portOrServer: any, options?: ServerOptions) {
+    const clientUrl = this.config.get('CLIENT_URL');
     const serverArg =
       typeof portOrServer === 'number' ? undefined : portOrServer;
 
     const partialOpts: Partial<ServerOptions> = {
       cors: {
-        origin: this.config.get('CLIENT_URL'),
+        origin: [clientUrl, 'http://localhost:3000'],
         credentials: true,
       },
+      transports: ['polling', 'websocket'],
     };
 
     return serverArg
